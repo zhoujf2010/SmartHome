@@ -1,0 +1,11 @@
+/SmartHomeLCD/.settings/com.zksw.flythings.easyui.prefs
+/SmartHomeLCD/.settings/language.settings.xml
+/SmartHomeLCD/.settings/org.eclipse.cdt.core.prefs
+/SmartHomeLCD/.settings/org.eclipse.core.resources.prefs
+/SmartHomeLCD/obj
+/bridgeLCD/src/commonlib
+/myIRdev/src/commonlib
+/myDHT11/src/commonlib
+/myHCSR/src/commonlib
+/mylightsensor/src/commonlib
+/mysonoff/src/commonlib
