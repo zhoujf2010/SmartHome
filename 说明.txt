@@ -6,3 +6,15 @@ bridgeLCD
 myIRdev
     红外线
 
+myDHT11
+    温湿度传感器
+
+myHCSR
+    人体传感器
+
+mylightsensor
+     光线传感器
+
+mysonoff
+     开关
+

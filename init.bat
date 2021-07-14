@@ -13,5 +13,10 @@ mklink /D %CD%\myIRdev\src\commonlib %CD%\commonlib
 
 mklink /D %CD%\bridgeLCD\src\commonlib %CD%\commonlib
 
+mklink /D %CD%\myDHT11\src\commonlib %CD%\commonlib
+mklink /D %CD%\myHCSR\src\commonlib %CD%\commonlib
+mklink /D %CD%\mylightsensor\src\commonlib %CD%\commonlib
+mklink /D %CD%\mysonoff\src\commonlib %CD%\commonlib
+
 
 pause
