@@ -5,6 +5,7 @@
 #include "wifimanage.h"
 #include "webcontent.h"
 #include "common.h"
+#include <PubSubClient.h>
 
 ESP8266WebServer server(80);
 String readesid();
@@ -91,7 +92,7 @@ void getAPlist() {
   delay(100);
   int n = WiFi.scanNetworks();
   Serial.println(F("Scan done"));
-  String APwebstring ="";
+  String APwebstring = "";
   if (n == 0) {
     Serial.println(F("No networks found :("));
     APwebstring = F("No networks found :(");
@@ -297,9 +298,127 @@ void startWifi() {
   Serial.println("HTTP server started");
 }
 
+
+WiFiClient wifiClient;
+PubSubClient mqttClient(wifiClient);
+bool hasmqtt = false;
+
+String _MQTT_TOPIC = "";
+std::function<void(String str)> _callback;
+
+
+void innercallback(char* topic, byte* payload, unsigned int length) {
+  String payload_string = "";
+  for (int i = 0; i < length; ++i)
+    payload_string += char(payload[i]);
+  _callback(payload_string);
+}
+
+void initMQTT(String MQTT_TOPIC, std::function<void(String str)> callback) {
+  _MQTT_TOPIC = MQTT_TOPIC;
+  _callback = callback;
+  if (readmqttip() != "") {
+    char* c = new char[200];  //深度copy一下，否则直接用就不行
+    strcpy(c, readmqttip().c_str());
+    mqttClient.setServer(c, 1883);
+    mqttClient.setCallback(innercallback);
+    connectMQTT();
+    hasmqtt = true;
+  }
+}
+
+
+void connectMQTT() {
+  while (!mqttClient.connected()) {
+    Serial.print("Attempting MQTT connection...");
+    if (mqttClient.connect(readID().c_str())) {
+      Serial.println("connected");
+
+      mqttClient.subscribe(_MQTT_TOPIC.c_str());
+      Serial.println("Topic:" + _MQTT_TOPIC);
+    } else {
+      Serial.print("failed, rc=");
+      Serial.print(mqttClient.state());
+      Serial.println(" try again in 5 seconds");
+      delay(5000);// Wait 5 seconds before retrying
+    }
+  }
+}
+
+void sendmqtt(String path, String msg) {
+  String path2 = _MQTT_TOPIC + path;
+
+  mqttClient.publish(path2.c_str(), msg.c_str());
+}
+
+
+int kUpdFreq = 1;                                            // Update frequency in Mintes to check for mqtt connection
+int kRetries = 10;                                           // WiFi retry count. Increase if not connecting to router.
+unsigned long TTasks;
+void timedTasks() {
+  if ((millis() > TTasks + (kUpdFreq * 60000)) || (millis() < TTasks)) {
+    TTasks = millis();
+    checkConnection();
+  }
+}
+
+
+void checkConnection() {
+  if (WiFi.status() != WL_CONNECTED) {
+    ESP.restart();
+  }
+  //  if (WiFi.status() == WL_CONNECTED)  {
+  //    if (mqttClient.connected()) {
+  //      Serial.println("mqtt broker connection . . . . . . . . . . OK");
+  //    }
+  //    else {
+  //      Serial.println("mqtt broker connection . . . . . . . . . . LOST");
+  //      requestRestart = true;
+  //    }
+  //  }
+  //  else {
+  //    Serial.println("WiFi connection . . . . . . . . . . LOST");
+  //    requestRestart = true;
+  //  }
+
+  //  if (!mqttClient.connected()) {
+  //    //    if (!isconnecting) {
+  //    //      isconnecting = true;
+  //    //      Serial.println("start connect mqtt");
+  //    //      mqtt_timer.once(0.1, reconnect);
+  //    //      mqtt_timer.detach();
+  //    //    }
+  //
+  //    Serial.print("Attempting MQTT connection...");
+  //    if (mqttClient.connect(readID().c_str())) {
+  //      Serial.println("connected");
+  //      mqttClient.subscribe(MQTT_TOPIC);
+  //    } else {
+  //      Serial.print("failed, rc=");
+  //      Serial.print(mqttClient.state());
+  //      Serial.println(" try again in 5 seconds");
+  //      // Wait 5 seconds before retrying
+  ////      delay(5000);
+  //    }
+  //  }
+}
+
+
+
 void wifiloop() {
 
 
-  
+
+  timedTasks();
+
+
   server.handleClient();                    // Listen for HTTP requests from clients
+
+
+  if (hasmqtt && !mqttClient.connected()) {
+    connectMQTT();
+  }
+
+  if (hasmqtt)
+    mqttClient.loop();
 }

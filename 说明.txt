@@ -1,0 +1,8 @@
+commonlib处理通用类，wifi ,ota等
+
+bridgeLCD
+    LCD桥接器，通过EPS连接wifi
+
+myIRdev
+    红外线
+
