@@ -18,6 +18,7 @@ void clearroom() {
   for (int i = 0; i < 225; ++i) {
     EEPROM.write(i, 0);
   }
+  EEPROM.write(225, 0);
   EEPROM.commit();
 }
 
