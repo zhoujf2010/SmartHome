@@ -12,7 +12,8 @@
 #include "CommDef.h"
 
 /******************** CmdID ***********************/
-#define CMDID_POWER							0x0
+#define CMDID_DATA							0x0
+#define CMDID_INFO            0x1    // 新增ID
 /**************************************************/
 
 /******************** 错误码 Error code ***********************/
@@ -20,7 +21,9 @@
 /**************************************************/
 
 typedef struct {
-	BYTE power;
+    char *info;
+    char receive[255];
+    BYTE reclen;
 } SProtocolData;
 
 #endif /* _UART_PROTOCOL_DATA_H_ */

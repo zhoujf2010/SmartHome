@@ -154,8 +154,17 @@ void button() {
   }
 }
 
+unsigned long checkLastTime;
+
 void connectMQTT() {
-  while (!mqttClient.connected()) {
+
+
+  if (!mqttClient.connected()) {
+    if (millis() < checkLastTime + 5000) {
+      return ;  //5秒内不重复检测
+    }
+    checkLastTime = millis();
+
     Serial.print("Attempting MQTT connection...");
     if (mqttClient.connect(readID().c_str())) {
       Serial.println("connected");
@@ -206,7 +215,7 @@ void timedTasks() {
 }
 
 void checkConnection() {
-  if (WiFi.status() != WL_CONNECTED){
+  if (WiFi.status() != WL_CONNECTED) {
     ESP.restart();
   }
   //  if (WiFi.status() == WL_CONNECTED)  {
@@ -223,26 +232,26 @@ void checkConnection() {
   //    requestRestart = true;
   //  }
 
-//  if (!mqttClient.connected()) {
-//    //    if (!isconnecting) {
-//    //      isconnecting = true;
-//    //      Serial.println("start connect mqtt");
-//    //      mqtt_timer.once(0.1, reconnect);
-//    //      mqtt_timer.detach();
-//    //    }
-//
-//    Serial.print("Attempting MQTT connection...");
-//    if (mqttClient.connect(readID().c_str())) {
-//      Serial.println("connected");
-//      mqttClient.subscribe(MQTT_TOPIC);
-//    } else {
-//      Serial.print("failed, rc=");
-//      Serial.print(mqttClient.state());
-//      Serial.println(" try again in 5 seconds");
-//      // Wait 5 seconds before retrying
-////      delay(5000);
-//    }
-//  }
+  //  if (!mqttClient.connected()) {
+  //    //    if (!isconnecting) {
+  //    //      isconnecting = true;
+  //    //      Serial.println("start connect mqtt");
+  //    //      mqtt_timer.once(0.1, reconnect);
+  //    //      mqtt_timer.detach();
+  //    //    }
+  //
+  //    Serial.print("Attempting MQTT connection...");
+  //    if (mqttClient.connect(readID().c_str())) {
+  //      Serial.println("connected");
+  //      mqttClient.subscribe(MQTT_TOPIC);
+  //    } else {
+  //      Serial.print("failed, rc=");
+  //      Serial.print(mqttClient.state());
+  //      Serial.println(" try again in 5 seconds");
+  //      // Wait 5 seconds before retrying
+  ////      delay(5000);
+  //    }
+  //  }
 }
 
 
@@ -252,7 +261,7 @@ void loop() {
     return ;
 
   timedTasks();
-  
+
   wifiloop();
 
   if (hasmqtt && !mqttClient.connected()) {
@@ -260,6 +269,7 @@ void loop() {
   }
 
   if (sendStatus) { //发送至mq
+  if (hasmqtt && mqttClient.connected()) {
     String path = MQTT_TOPIC + "/stat";
     if (digitalRead(RELAY) == HIGH)  {
       mqttClient.publish(path.c_str(), "on");
@@ -268,6 +278,7 @@ void loop() {
       mqttClient.publish(path.c_str(), "off");
       Serial.println("Relay . . . . . . . . . . . . . . . . . . OFF");
     }
+  }
     sendStatus = false;
   }
   mqttClient.loop();

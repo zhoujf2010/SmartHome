@@ -7,7 +7,7 @@
 #include<SoftwareSerial.h>
 #include <Ticker.h>
 
-WiFiServer sockertserver(8266);//你要的端口号，随意修改，范围0-65535
+WiFiServer sockertserver(81);//你要的端口号，随意修改，范围0-65535
 WiFiClient serverClient;
 
 String DEVICE    =      "bridgeLCD";
@@ -16,7 +16,11 @@ String DEVICE    =      "bridgeLCD";
 #define LEDOFF          HIGH
 
 //新建一个softSerial对象，rx:6,tx:5
-SoftwareSerial softSerial1(0, 2);
+SoftwareSerial softSerial1(8, 0); //2口用于灯 0用于TX输出
+
+
+#define myserial Serial
+//#define myserial softSerial1
 
 
 Ticker led_timer;
@@ -55,51 +59,63 @@ void blink() {
   digitalWrite(LED, !digitalRead(LED));
 }
 
+int pos = 0;
 
-String getReceiveData(byte* buf, int len) {
-  if (len > 5) {
-    if (buf[0] == 0xff && buf[1] == 0x55) { //数据进来
-      byte tp = buf[3];  //获取数据类型
-      byte len = buf[4];
-
-      String payload_string = "";
-      for (int i = 0; i < len; ++i)
-        payload_string += char(buf[i + 5]);
-      return payload_string;
-    }
+byte getCheckSum(byte *pData, int len) {
+  int sum = 0;
+  for (int i = 0; i < len; ++i) {
+    sum += pData[i];
   }
-  return "";
+
+  return (byte) (~sum + 1);
+}
+
+String getReceiveData(byte* buf) {
+  if (pos <= 5 )
+    return ""; //数据不足
+
+  if (buf[0] != 0xff || buf[1] != 0x55) { //不是指定数据格式，重读
+    pos = 0;
+    Serial.println("ReRead");
+    return "";
+  }
+  byte tp = buf[3];  //获取数据类型
+  byte datalen = buf[4];
+  if (pos < datalen + 5) {
+    Serial.println("Less");
+    return ""; //数据长度不足
+  }
+
+  if (getCheckSum(buf, pos - 1) != buf[pos - 1]) { //数据验证不对，数据抛弃
+    Serial.println("CheckError");
+    Serial.println(getCheckSum(buf, pos - 1) );
+    Serial.println(buf[pos - 1] );
+    pos = 0;
+    return "";
+  }
+
+  String payload_string = "";
+  for (int i = 0; i < datalen; ++i)
+    payload_string += char(buf[i + 5]);
+
+  pos = 0;//正确读到数据，游标归位
+  return payload_string;
 }
 
 byte bufx[255];
-void Send(String data) {
-  bufx[0] = 0xff;
-  bufx[1] = 0x55;
-  bufx[2] = 0;
-  bufx[3] = 3;
-  bufx[4] = data.length();
-  for (int i = 0; i < bufx[4]; i ++) {
-    bufx[i + 5] = data.c_str()[i];
-  }
-
-
-  for (int i = 0; i < bufx[4] + 5; i ++) {
-    softSerial1.write(bufx[i]);
-  }
-}
-
 void Send(byte* data, int len) {
   bufx[0] = 0xff;
   bufx[1] = 0x55;
   bufx[2] = 0;
-  bufx[3] = 3;
+  bufx[3] = 0;
   bufx[4] = len;
-  for (int i = 0; i < bufx[4]; i ++) {
+  for (int i = 0; i < len; i ++) {
     bufx[i + 5] = data[i];
   }
+  bufx[len + 5] = getCheckSum(bufx, len + 5);
 
-  for (int i = 0; i < bufx[4] + 5; i ++) {
-    softSerial1.write(bufx[i]);
+  for (int i = 0; i < len + 6; i ++) {
+    Serial.write(bufx[i]);
   }
 }
 
@@ -109,35 +125,23 @@ void loop() {
   if (loopOTA())
     return ;
 
-  //timedTasks();
-
   wifiloop();
 
   //读取从设备A传入的数据，并在串口监视器中显示
-
-  int len = 0;
-  while (softSerial1.available() > 0)
+  while (Serial.available() > 0)
   {
-    buf[len] = softSerial1.read();
-    len++;
+    buf[pos] = Serial.read();
+    pos++;
   }
-  String recstr = getReceiveData(buf, len);
+
+  String recstr = getReceiveData(buf);
 
   if (recstr != "") {
-    Serial.println("receive from lcd:" + recstr);
+    softSerial1.println("receive from lcd:" + recstr);
     if (serverClient && serverClient.connected()) {
       serverClient.write(recstr.c_str(), recstr.length());
-      Serial.println("send to seb:" + recstr);
+      softSerial1.println("send to seb:" + recstr);
     }
-
-    //    if (recstr == "Hello") {
-    //      Serial.println("check OK");
-    //      Send("Hixxxx{\"aa\"}");
-    //    }
-    //    if (recstr == "ttttzzz") {
-    //      Serial.println("check2 OK");
-    //      Send("abc");
-    //    }
   }
 
   uint8_t i;
@@ -157,18 +161,14 @@ void loop() {
     int p = 0;
     while (serverClient.available()) {
       char c = serverClient.read();
-      Serial.print(c);
       buf2[p] = c;
       p++;
     }
 
     if (p > 0) {
-      String payload_string = "";
-      for (int i = 0; i < p; ++i)
-        payload_string += char(buf2[i]);
-
       Send(buf2, p);
-      Serial.println("receive from web:" + payload_string);
     }
   }
+
+  delay(5);
 }

@@ -70,9 +70,11 @@ BYTE getCheckSum(const BYTE *pData, int len) {
 static void procParse(const BYTE *pData, UINT len) {
 	// CmdID
 	switch (MAKEWORD(pData[3], pData[2])) {
-	case CMDID_POWER:
-		sProtocolData.power = pData[5];
-		break;
+    case CMDID_DATA:    // 新增部分，保存角度值
+        sProtocolData.reclen = len-6;
+    	for(int i = 0;i < sProtocolData.reclen;i++){
+            sProtocolData.receive[i] = pData[5+i];
+    	}
 	}
 
 	// 通知协议数据更新

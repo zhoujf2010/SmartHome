@@ -16,7 +16,7 @@ extern BYTE getCheckSum(const BYTE *pData, int len);
  * 需要根据协议格式进行拼接，以下只是个模板
  * Need to be spliced ​​according to the agreement format, the following is just a template
  */
-bool sendProtocol(const UINT16 cmdID, const BYTE *pData, BYTE len) {
+bool sendProtocol(const UINT16 cmdID, const char *pData, BYTE len) {
 	if (len + DATA_PACKAGE_MIN_LEN > 256) {
 		LOGE("sendProtocol data is too len !!!\n");
 		return false;

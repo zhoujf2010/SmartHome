@@ -72,6 +72,8 @@ static void onUI_quit() {
  */
 static void onProtocolDataUpdate(const SProtocolData &data) {
     //串口数据回调接口
+
+    LOGD("Hixxxxx");
 }
 
 /**

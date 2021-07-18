@@ -8,13 +8,13 @@
 *========================onButtonClick_XXXX
 当页面中的按键按下后系统会调用对应的函数，XXX代表GUI工具里面的[ID值]名称，
 如Button1,当返回值为false的时候系统将不再处理这个按键，返回true的时候系统将会继续处理此按键。比如SYS_BACK.
-*========================onSlideWindowItemClick_XXXX(int index) 
+*========================onSlideWindowItemClick_XXXX(int index)
 当页面中存在滑动窗口并且用户点击了滑动窗口的图标后系统会调用此函数,XXX代表GUI工具里面的[ID值]名称，
 如slideWindow1;index 代表按下图标的偏移值
-*========================onSeekBarChange_XXXX(int progress) 
+*========================onSeekBarChange_XXXX(int progress)
 当页面中存在滑动条并且用户改变了进度后系统会调用此函数,XXX代表GUI工具里面的[ID值]名称，
 如SeekBar1;progress 代表当前的进度值
-*========================ogetListItemCount_XXXX() 
+*========================ogetListItemCount_XXXX()
 当页面中存在滑动列表的时候，更新的时候系统会调用此接口获取列表的总数目,XXX代表GUI工具里面的[ID值]名称，
 如List1;返回值为当前列表的总条数
 *========================oobtainListItemData_XXXX(ZKListView::ZKListItem *pListItem, int index)
@@ -37,6 +37,124 @@
 #include <sys/stat.h>
 #include "os/MountMonitor.h"
 
+
+
+/******************* 第1页，开关处理*******************************/
+static int lamplistSel = 0;
+
+string LampName[] = {
+		"测试灯",
+		"氛围灯",
+		"筒灯",
+		"饭厅灯",
+		"电视灯",
+		"房间1",
+		"房间2",
+		"走廊灯",
+		"阳台灯",
+		"吊顶灯",
+		"射灯",
+};
+
+static void DealPage1(Json::Value root2) {
+	int index = 0;
+	string text = "";
+	int value = 0;
+	//解析json
+	Json::Reader reader;
+	if (root2.isMember("text"))
+		text = root2["text"].asString();
+	if (root2.isMember("index"))
+		index = root2["index"].asInt();
+	if (root2.isMember("text"))
+		text = root2["text"].asString();
+	if (root2.isMember("value"))
+		value = root2["value"].asInt();
+
+	LOGD("index = %d", index);
+	LOGD("text = %s", text.c_str());
+	LOGD("value = %d", value);
+
+	//   mListview2Ptr->setSelection(0);
+	LampName[index] = text.c_str();
+
+	if (value == 0)
+		lamplistSel &= ~(1 << index);
+	else if (value == 1)
+		lamplistSel |= (1 << index);
+
+	mListview2Ptr->refreshListView();
+
+	LOGD("textxxx = %s", LampName[index]);
+}
+
+
+
+
+static int getListItemCount_Listview2(const ZKListView *pListView) {
+    //LOGD("getListItemCount_Listview2 !\n");
+
+//	mListview2Ptr->
+    return 9;
+
+}
+
+static void obtainListItemData_Listview2(ZKListView *pListView,ZKListView::ZKListItem *pListItem, int index) {
+    LOGD(" obtainListItemData_ Listview2  xxxxxxx!!!\n");
+
+	ZKListView::ZKListSubItem* subitem= pListItem->findSubItemByID(ID_MAIN_SubItem2);
+	if(lamplistSel & (1<< index)){
+		subitem->setSelected(true);
+	}else{
+		subitem->setSelected(false);
+	}
+
+	pListItem->setText(LampName[index].c_str());
+
+//	string a ="你好";
+//	pListItem->setText(a.c_str());
+}
+
+static void onListItemClick_Listview2(ZKListView *pListView, int index, int id) {
+    LOGD(" onListItemClick_ Listview2  !!!\n");
+//	if(lamplistSel & (1<< index)){
+//		lamplistSel &= ~(1<< index);
+//	}else{
+//		lamplistSel |= (1<< index);
+//	}
+//    BYTE data = rand() % 200;
+//	sendProtocol(CMDID_INFO, &data, 1);
+	int v = lamplistSel & (1 << index) ;
+	if (v > 0)
+		v = 0;
+	else
+		v = 1;
+
+	char buf[22] = {0};
+	snprintf(buf, sizeof(buf), "{\"index\":%d,\"value\":%d}", index,v);
+
+
+//	string a ="{\"index\":" + index + ",\"value\":" + lamplistSel + "}";
+	sendProtocol(CMDID_INFO, buf, 22);
+
+
+//	if (index == 0){
+//		string a ="Hello";
+//		sendProtocol(CMDID_INFO, a.c_str(), a.length());
+//	}if (index == 1){
+//		string a ="HelloWorld";
+//		sendProtocol(CMDID_INFO, a.c_str(), a.length());
+//	}if (index == 2){
+//		string a ="Hiasdfasdf";
+//		sendProtocol(CMDID_INFO, a.c_str(), a.length());
+//	}
+}
+
+
+
+
+/******************* 第2页，*******************************/
+
 const int dayTab[]={31,28,31,30,31,30,31,31,30,31,30,31,30};
 
 
@@ -48,6 +166,7 @@ static bool bPause = false;
 static vector<string>fileList;
 static unsigned int curPlayIndex = 0;
 static unsigned int lastPlayIndex = 0;
+
 
 /**
  * 扫描文件
@@ -260,12 +379,12 @@ static void onUI_init(){
 	}
 	mSoneNameTextviewPtr->setText("");
 
-	UARTCONTEXT->openUart("/dev/ttyS0",115200);
-	BYTE pData[2];
-	pData[0]= 65;
-	pData[1]= 66;
-
-	UARTCONTEXT->send(pData, 2);
+//	UARTCONTEXT->openUart("/dev/ttyS0",115200);
+//	BYTE pData[2];
+//	pData[0]= 65;
+//	pData[1]= 66;
+//
+//	UARTCONTEXT->send(pData, 2);
 }
 
 /**
@@ -295,13 +414,6 @@ static void onUI_hide() {
  * 当界面完全退出时触发
  */
 static void onUI_quit() {
-
-}
-
-/**
- * 串口数据回调接口
- */
-static void onProtocolDataUpdate(const SProtocolData &data) {
 
 }
 
@@ -509,49 +621,7 @@ static bool onButtonClick_Button3(ZKButton *pButton) {
 static void onProgressChanged_Seekbar1(ZKSeekBar *pSeekBar, int progress) {
     //LOGD(" ProgressChanged Seekbar1 %d !!!\n", progress);
 }
-static int lamplistSel = 0;
 
-const char* const LampName[] = {
-		"客厅灯",
-		"氛围灯",
-		"筒灯",
-		"饭厅灯",
-		"电视灯",
-		"房间1",
-		"房间2",
-		"走廊灯",
-		"阳台灯",
-		"吊顶灯",
-		"射灯",
-};
-static int getListItemCount_Listview2(const ZKListView *pListView) {
-    //LOGD("getListItemCount_Listview2 !\n");
-    return 9;
-
-}
-
-static void obtainListItemData_Listview2(ZKListView *pListView,ZKListView::ZKListItem *pListItem, int index) {
-    //LOGD(" obtainListItemData_ Listview2  !!!\n");
-
-	ZKListView::ZKListSubItem* subitem= pListItem->findSubItemByID(ID_MAIN_SubItem2);
-	if(lamplistSel & (1<< index)){
-		subitem->setSelected(true);
-	}else{
-		subitem->setSelected(false);
-	}
-	pListItem->setText(LampName[index]);
-}
-
-static void onListItemClick_Listview2(ZKListView *pListView, int index, int id) {
-    LOGD(" onListItemClick_ Listview2  !!!\n");
-	if(lamplistSel & (1<< index)){
-		lamplistSel &= ~(1<< index);
-	}else{
-		lamplistSel |= (1<< index);
-	}
-    BYTE data = rand() % 200;
-	sendProtocol(CMDID_POWER, &data, 1);
-}
 static const char* TempTab[]={
 		"  ",
 		"Lo",
@@ -929,4 +999,27 @@ static bool onButtonClick_ListButton(ZKButton *pButton) {
     //LOGD(" ButtonClick ListButton !!!\n");
 	mListWindowPtr->showWnd();
     return false;
+}
+
+
+
+/**
+ * 收到串口数据
+ */
+static void onProtocolDataUpdate(const SProtocolData &data) {
+
+	string s2 = string(data.receive, 0, data.reclen);
+	LOGD("%s", s2.c_str());
+
+	string page = "";
+	//解析json
+	Json::Reader reader;
+	Json::Value root2;
+	if (reader.parse(s2, root2, false)) {
+		LOGD("解析成功");
+		if (root2.isMember("page"))
+			page = root2["page"].asString();
+		if (page == "page1")
+			DealPage1(root2);
+   }
 }

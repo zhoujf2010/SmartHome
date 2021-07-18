@@ -43,7 +43,7 @@ typedef unsigned short  UINT16;
 
 // 支持checksum校验，打开以下宏
 //Support checksum verification, open the following macro
-//#define PRO_SUPPORT_CHECK_SUM
+#define PRO_SUPPORT_CHECK_SUM
 
 
 // SynchFrame CmdID  DataLen Data CheckSum (可选) 
