@@ -231,6 +231,15 @@ String readesid() {
   return readData(0, 32);
 }
 
+String getIP(){
+  String esid = readesid();
+  if (esid != "") { //连接wifi
+     return WiFi.localIP().toString();
+  }
+  else { //启动热点
+     return WiFi.softAPIP().toString();
+  }
+}
 
 //0-32 SID
 //33-96 password

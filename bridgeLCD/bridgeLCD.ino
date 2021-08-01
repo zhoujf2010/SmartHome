@@ -6,6 +6,7 @@
 #include <PubSubClient.h>
 #include<SoftwareSerial.h>
 #include <Ticker.h>
+#include <ArduinoJson.h>
 
 WiFiServer sockertserver(81);//你要的端口号，随意修改，范围0-65535
 WiFiClient serverClient;
@@ -103,7 +104,7 @@ String getReceiveData(byte* buf) {
 }
 
 byte bufx[255];
-void Send(byte* data, int len) {
+void SendtoLCD(byte* data, int len) {
   bufx[0] = 0xff;
   bufx[1] = 0x55;
   bufx[2] = 0;
@@ -117,6 +118,42 @@ void Send(byte* data, int len) {
   for (int i = 0; i < len + 6; i ++) {
     Serial.write(bufx[i]);
   }
+}
+
+StaticJsonDocument<200> doc;
+
+String recDeal(String msg) {
+  // Deserialize the JSON document
+  DeserializationError error = deserializeJson(doc, msg.c_str());
+  // Test if parsing succeeds.
+  if (error) {
+    Serial.println(error.f_str());
+    return "deserializeJson() failed: ";
+  }
+  const char* type = doc["type"];
+  const char* msgx = doc["msg"];
+  String s_type = String(type);
+  if (s_type != "inner")
+    return "";
+  String s_msg = String(msgx);
+  String retstr = "";
+  if (s_msg == "ip")
+    retstr = getIP();
+  else if (s_msg == "reset") {
+    ESP.restart();
+    retstr = "OK";
+  }
+  else if (s_msg == "clear") {
+    clearroom();
+    ESP.restart();
+    retstr = "OK";
+  }
+  else
+    retstr = "unknow cmd";
+
+
+  String result = "{\"type\":\"inner\",\"msg\":\"" + s_msg + "\",\"result\":\"" + retstr + "\"}";
+  return result;
 }
 
 byte buf[255];
@@ -133,18 +170,23 @@ void loop() {
     buf[pos] = Serial.read();
     pos++;
   }
-
   String recstr = getReceiveData(buf);
 
   if (recstr != "") {
     softSerial1.println("receive from lcd:" + recstr);
+
+    //内部命令，发给ESP的，直接处理，并返回
+    String tmp = recDeal(recstr);
+    if (tmp != "")
+      SendtoLCD((byte*)tmp.c_str(), tmp.length());
+
+
     if (serverClient && serverClient.connected()) {
       serverClient.write(recstr.c_str(), recstr.length());
-      softSerial1.println("send to seb:" + recstr);
     }
   }
 
-  uint8_t i;
+  //从网络读取，写入LCD
   if (sockertserver.hasClient())
   {
     if (!serverClient || !serverClient.connected()) {
@@ -166,7 +208,7 @@ void loop() {
     }
 
     if (p > 0) {
-      Send(buf2, p);
+      SendtoLCD(buf2, p);
     }
   }
 

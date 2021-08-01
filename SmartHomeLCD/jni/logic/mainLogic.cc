@@ -39,44 +39,88 @@
 
 
 
-/******************* 第1页，开关处理*******************************/
-static int lamplistSel = 0;
+/******************* 左侧选择栏 *******************************/
+static int targetPos,curPos;
 
-string LampName[] = {
-		"测试灯",
-		"氛围灯",
-		"筒灯",
-		"饭厅灯",
-		"电视灯",
-		"房间1",
-		"房间2",
-		"走廊灯",
-		"阳台灯",
-		"吊顶灯",
-		"射灯",
+static int uipos[]={
+		0,
+		-480,
+		-960,
+		-1440,
+		-1920,
+		-2400,
+		-2880
 };
 
-static void DealPage1(Json::Value root2) {
-	int index = 0;
-	string text = "";
+static int getListItemCount_Listview1(const ZKListView *pListView) {
+    //LOGD("getListItemCount_Listview1 !\n");
+    return 6;
+}
+static int listSel = 0;
+static const char* IconText[]={
+		"0","a",
+		"1","b",
+		"2","c",
+		"3","d",
+		"4","e",
+		"5","f",
+		"6","g",
+		"1","b"
+};
+
+static void obtainListItemData_Listview1(ZKListView *pListView,ZKListView::ZKListItem *pListItem, int index) {
+    //LOGD(" obtainListItemData_ Listview1  !!!\n");
+	ZKListView::ZKListSubItem* item = pListItem->findSubItemByID(ID_MAIN_SubItem1);
+	if(listSel == index){
+		item->setText(IconText[index*2+1]);
+	}else{
+		item->setText(IconText[index*2]);
+	}
+}
+
+static void onListItemClick_Listview1(ZKListView *pListView, int index, int id) {
+    //LOGD(" onListItemClick_ Listview1  !!!\n");
+	listSel = index;
+	targetPos = uipos[index];
+	LOGD(" onListItemClick_ Listview1 %d  !!!\n",index);
+
+	char buf[40] = {0};
+	snprintf(buf, sizeof(buf), "{\"type\":\"init\",\"value\":\"page%d\"}", index);
+	sendProtocol(CMDID_INFO, buf, 40);
+}
+
+
+
+/******************* 第1页，开关处理*******************************/
+static int lamplistSel = 0;	//按钮按键状态，用位来表示
+string LampName[9];
+
+static void DealPage0_init(Json::Value root2){
+    Json::Value obj = root2["data"];
+
+    //清空
+    for (int i = 0; i < 9; ++i) {
+    	LampName[i] = "";
+	 }
+    //获取标题
+    for (Json::ArrayIndex i = 0; i < obj.size(); ++i) {
+    	LampName[i] = obj[i].asString();
+	 }
 	int value = 0;
-	//解析json
-	Json::Reader reader;
-	if (root2.isMember("text"))
-		text = root2["text"].asString();
+	if (root2.isMember("listSel"))
+		value = root2["listSel"].asInt();
+    lamplistSel = value;
+
+	mListview2Ptr->refreshListView();
+}
+
+static void DealPage0(Json::Value root2) {
+	int index = 0;
+	int value = 0;
 	if (root2.isMember("index"))
 		index = root2["index"].asInt();
-	if (root2.isMember("text"))
-		text = root2["text"].asString();
 	if (root2.isMember("value"))
 		value = root2["value"].asInt();
-
-	LOGD("index = %d", index);
-	LOGD("text = %s", text.c_str());
-	LOGD("value = %d", value);
-
-	//   mListview2Ptr->setSelection(0);
-	LampName[index] = text.c_str();
 
 	if (value == 0)
 		lamplistSel &= ~(1 << index);
@@ -84,76 +128,67 @@ static void DealPage1(Json::Value root2) {
 		lamplistSel |= (1 << index);
 
 	mListview2Ptr->refreshListView();
-
-	LOGD("textxxx = %s", LampName[index]);
 }
-
-
-
 
 static int getListItemCount_Listview2(const ZKListView *pListView) {
-    //LOGD("getListItemCount_Listview2 !\n");
-
-//	mListview2Ptr->
     return 9;
-
-}
-
-static void obtainListItemData_Listview2(ZKListView *pListView,ZKListView::ZKListItem *pListItem, int index) {
-    LOGD(" obtainListItemData_ Listview2  xxxxxxx!!!\n");
-
-	ZKListView::ZKListSubItem* subitem= pListItem->findSubItemByID(ID_MAIN_SubItem2);
-	if(lamplistSel & (1<< index)){
-		subitem->setSelected(true);
-	}else{
-		subitem->setSelected(false);
-	}
-
-	pListItem->setText(LampName[index].c_str());
-
-//	string a ="你好";
-//	pListItem->setText(a.c_str());
 }
 
 static void onListItemClick_Listview2(ZKListView *pListView, int index, int id) {
-    LOGD(" onListItemClick_ Listview2  !!!\n");
-//	if(lamplistSel & (1<< index)){
-//		lamplistSel &= ~(1<< index);
-//	}else{
-//		lamplistSel |= (1<< index);
-//	}
-//    BYTE data = rand() % 200;
-//	sendProtocol(CMDID_INFO, &data, 1);
 	int v = lamplistSel & (1 << index) ;
 	if (v > 0)
 		v = 0;
 	else
 		v = 1;
 
-	char buf[22] = {0};
-	snprintf(buf, sizeof(buf), "{\"index\":%d,\"value\":%d}", index,v);
-
-
-//	string a ="{\"index\":" + index + ",\"value\":" + lamplistSel + "}";
-	sendProtocol(CMDID_INFO, buf, 22);
-
-
-//	if (index == 0){
-//		string a ="Hello";
-//		sendProtocol(CMDID_INFO, a.c_str(), a.length());
-//	}if (index == 1){
-//		string a ="HelloWorld";
-//		sendProtocol(CMDID_INFO, a.c_str(), a.length());
-//	}if (index == 2){
-//		string a ="Hiasdfasdf";
-//		sendProtocol(CMDID_INFO, a.c_str(), a.length());
-//	}
+	char buf[50] = {0};
+	snprintf(buf, sizeof(buf), "{\"type\":\"page0\",\"index\":%d,\"value\":%d}", index,v);
+	sendProtocol(CMDID_INFO, buf, 50);
 }
 
 
 
-
 /******************* 第2页，*******************************/
+
+
+
+/******************* 设置页面 *******************************/
+static void inner_init(Json::Value root2){
+	string msg = root2["msg"].asString();
+	string result = root2["result"].asString();
+	LOGD("msg->%s,result->%s", msg.c_str(),result.c_str());
+	if (msg =="ip")
+		mtxtTextinfoPtr->setText(result);
+}
+
+//按钮 获取IP地址
+static bool onButtonClick_btnGetIP(ZKButton *pButton) {
+	char buf[40] = {0};
+	snprintf(buf, sizeof(buf), "{\"type\":\"inner\",\"msg\":\"ip\"}");
+	sendProtocol(CMDID_INFO, buf, 40);
+    return false;
+}
+
+//按钮 重启ESP芯片
+static bool onButtonClick_btnReset(ZKButton *pButton) {
+	char buf[40] = {0};
+	snprintf(buf, sizeof(buf), "{\"type\":\"inner\",\"msg\":\"reset\"}");
+	sendProtocol(CMDID_INFO, buf, 40);
+    return false;
+}
+
+//按钮 清空ESP芯片
+static bool onButtonClick_btnClear(ZKButton *pButton) {
+	char buf[40] = {0};
+	snprintf(buf, sizeof(buf), "{\"type\":\"inner\",\"msg\":\"clear\"}");
+	sendProtocol(CMDID_INFO, buf, 40);
+    return false;
+}
+
+
+/**************************************************/
+
+
 
 const int dayTab[]={31,28,31,30,31,30,31,31,30,31,30,31,30};
 
@@ -295,60 +330,58 @@ static S_ACTIVITY_TIMEER REGISTER_ACTIVITY_TIMER_TAB[] = {
 	{3, 100},
 };
 
-static int targetPos,curPos;
-
 #define sub(x,y) ((x>y)?(x-y):(y-x))
 
 static void initTimerDisp(){
 
-	struct tm *t = TimeHelper::getDateTime();
-	int year = t->tm_year+1900;
-	int month = t->tm_mon+1;
-	int day = t->tm_mday;
-	int hour = t->tm_hour;
-	int minute = t->tm_min;
-
-	if(year < 2010) year = 2010;
-
-	if(year == 2010){
-		mListviewYearPtr->setSelected(80);
-	}else{
-		mListviewYearPtr->setSelection(year-2010-1);
-	}
-
-	if(month < 2){
-		mListviewmonthPtr->setSelection(month-2+12);
-	}else{
-		mListviewmonthPtr->setSelection(month-2);
-	}
-
-
-	int index = mListviewmonthPtr->getFirstVisibleItemIndex()+1;
-	index = index%12;
-	int size = dayTab[index];
-	if(index == 1){
-		int index = mListviewYearPtr->getFirstVisibleItemIndex()+2011;
-		if(index%4 == 0){
-			size = 29;
-		}
-	}
-
-	if(day < 2){
-		mListviewDayPtr->setSelection(day-2+size);
-	}else{
-		mListviewDayPtr->setSelection(day-2);
-	}
-
-	if(hour < 1){
-		mListviewHourPtr->setSelection(23);
-	}else{
-		mListviewHourPtr->setSelection(hour-1);
-	}
-
-	if(minute < 1){
-		mListviewMinPtr->setSelection(59);
-	}else
-		mListviewMinPtr->setSelection(minute-1);
+//	struct tm *t = TimeHelper::getDateTime();
+//	int year = t->tm_year+1900;
+//	int month = t->tm_mon+1;
+//	int day = t->tm_mday;
+//	int hour = t->tm_hour;
+//	int minute = t->tm_min;
+//
+//	if(year < 2010) year = 2010;
+//
+//	if(year == 2010){
+//		mListviewYearPtr->setSelected(80);
+//	}else{
+//		mListviewYearPtr->setSelection(year-2010-1);
+//	}
+//
+//	if(month < 2){
+//		mListviewmonthPtr->setSelection(month-2+12);
+//	}else{
+//		mListviewmonthPtr->setSelection(month-2);
+//	}
+//
+//
+//	int index = mListviewmonthPtr->getFirstVisibleItemIndex()+1;
+//	index = index%12;
+//	int size = dayTab[index];
+//	if(index == 1){
+//		int index = mListviewYearPtr->getFirstVisibleItemIndex()+2011;
+//		if(index%4 == 0){
+//			size = 29;
+//		}
+//	}
+//
+//	if(day < 2){
+//		mListviewDayPtr->setSelection(day-2+size);
+//	}else{
+//		mListviewDayPtr->setSelection(day-2);
+//	}
+//
+//	if(hour < 1){
+//		mListviewHourPtr->setSelection(23);
+//	}else{
+//		mListviewHourPtr->setSelection(hour-1);
+//	}
+//
+//	if(minute < 1){
+//		mListviewMinPtr->setSelection(59);
+//	}else
+//		mListviewMinPtr->setSelection(minute-1);
 
 }
 
@@ -385,6 +418,11 @@ static void onUI_init(){
 //	pData[1]= 66;
 //
 //	UARTCONTEXT->send(pData, 2);
+
+	//发送消息，初使化第一页的信息
+	char buf[40] = {0};
+	snprintf(buf, sizeof(buf), "{\"type\":\"init\",\"value\":\"page0\"}");
+	sendProtocol(CMDID_INFO, buf, 40);
 }
 
 /**
@@ -493,15 +531,6 @@ static bool onUI_Timer(int id){
 static int lasty = 0,regpos = 0,startY = 0;
 static bool bMove = false;
 
-static int uipos[]={
-		0,
-		-480,
-		-960,
-		-1440,
-		-1920,
-		-2400,
-		-2880
-};
 /**
  * 有新的触摸事件时触发
  * 参数：ev
@@ -552,36 +581,7 @@ static bool onmainActivityTouchEvent(const MotionEvent &ev) {
 	}
 	return false;
 }
-static int getListItemCount_Listview1(const ZKListView *pListView) {
-    //LOGD("getListItemCount_Listview1 !\n");
-    return 6;
-}
-static int listSel = 0;
-static const char* IconText[]={
-		"0","a",
-		"1","b",
-		"2","c",
-		"3","d",
-		"4","e",
-		"5","f",
-		"6","g",
-		"1","b"
-};
-static void obtainListItemData_Listview1(ZKListView *pListView,ZKListView::ZKListItem *pListItem, int index) {
-    //LOGD(" obtainListItemData_ Listview1  !!!\n");
-	ZKListView::ZKListSubItem* item = pListItem->findSubItemByID(ID_MAIN_SubItem1);
-	if(listSel == index){
-		item->setText(IconText[index*2+1]);
-	}else{
-		item->setText(IconText[index*2]);
-	}
-}
 
-static void onListItemClick_Listview1(ZKListView *pListView, int index, int id) {
-    //LOGD(" onListItemClick_ Listview1  !!!\n");
-	listSel = index;
-	targetPos = uipos[index];
-}
 static bool onButtonClick_Button1(ZKButton *pButton) {
     //LOGD(" ButtonClick Button1 !!!\n");
     return false;
@@ -806,149 +806,96 @@ static void obtainListItemData_ListviewMin(ZKListView *pListView,ZKListView::ZKL
 		pListItem->setSelected(false);
 	}
 }
-
-static void onListItemClick_ListviewMin(ZKListView *pListView, int index, int id) {
-    //LOGD(" onListItemClick_ ListviewMin  !!!\n");
-	pListView->setSelection(index-1);
-}
-static int daysize = 0;
-static int getListItemCount_ListviewDay(const ZKListView *pListView) {
-    //LOGD(" getListItemCount_ ListviewDay  !!!\n");
-	int index = mListviewmonthPtr->getFirstVisibleItemIndex()+1;
-	index = index%12;
-	int size = dayTab[index];
-	if(index == 1){
-		int index = mListviewYearPtr->getFirstVisibleItemIndex()+2011;
-		if(index%4 == 0){
-			size = 29;
-		}
-	}
-	daysize = size;
-    return size;
-}
-
-static void obtainListItemData_ListviewDay(ZKListView *pListView,ZKListView::ZKListItem *pListItem, int index) {
-    //LOGD(" obtainListItemData_ ListviewDay  !!!\n");
-	pListItem->setText(index +1);
-	int first = pListView->getFirstVisibleItemIndex();
-	if((first == pListView->getListItemCount()-1) && (index == 0)){
-		pListItem->setSelected(true);
-	}else if(index == first+1){
-		pListItem->setSelected(true);
-	}else{
-		pListItem->setSelected(false);
-	}
-}
-
-static void onListItemClick_ListviewDay(ZKListView *pListView, int index, int id) {
-    //LOGD(" onListItemClick_ ListviewDay  !!!\n");
-	if(index == 0) index = daysize;
-	else if(index == daysize) index = 1;
-	pListView->setSelection(index-1);
-}
-
-static int getListItemCount_Listviewmonth(const ZKListView *pListView) {
-    //LOGD(" getListItemCount_ Listviewmonth  !!!\n");
-    return 12;
-}
-
-static void obtainListItemData_Listviewmonth(ZKListView *pListView,ZKListView::ZKListItem *pListItem, int index) {
-    //LOGD(" obtainListItemData_ Listviewmonth  !!!\n");
-	pListItem->setText(index +1);
-	int first = pListView->getFirstVisibleItemIndex();
-	if((first == pListView->getListItemCount()-1) && (index == 0)){
-		pListItem->setSelected(true);
-	}else if(index == first+1){
-		pListItem->setSelected(true);
-	}else{
-		pListItem->setSelected(false);
-	}
-}
-
-static void onListItemClick_Listviewmonth(ZKListView *pListView, int index, int id) {
-    //LOGD(" onListItemClick_ Listviewmonth  !!!\n");
-	if(index == 0) index = 12;
-	else if(index == 12) index = 1;
-	pListView->setSelection(index-1);
-}
-
-static int getListItemCount_ListviewYear(const ZKListView *pListView) {
-    //LOGD(" getListItemCount_ ListviewYear  !!!\n");
-    return 80;
-}
-
-static void obtainListItemData_ListviewYear(ZKListView *pListView,ZKListView::ZKListItem *pListItem, int index) {
-    //LOGD(" obtainListItemData_ ListviewYear  !!!\n");
-	pListItem->setText(index +2010);
-	int first = pListView->getFirstVisibleItemIndex();
-	if((first == pListView->getListItemCount()-1) && (index == 0)){
-		pListItem->setSelected(true);
-	}else if(index == first+1){
-		pListItem->setSelected(true);
-	}else{
-		pListItem->setSelected(false);
-	}
-}
-
-static void onListItemClick_ListviewYear(ZKListView *pListView, int index, int id) {
-    //LOGD(" onListItemClick_ ListviewYear  !!!\n");
-	if(index == 0) index = 80;
-	else if(index == 80) index = 1;
-	pListView->setSelection(index-1);
-}
-static bool onButtonClick_ButtonSave(ZKButton *pButton) {
-    //LOGD(" ButtonClick ButtonSave !!!\n");
-	int year = mListviewYearPtr->getFirstVisibleItemIndex()+2011;
-	int month = mListviewmonthPtr->getFirstVisibleItemIndex()+2;
-	int day = mListviewDayPtr->getFirstVisibleItemIndex()+2;
-	int hour = mListviewHourPtr->getFirstVisibleItemIndex()+1;
-	int minute = mListviewMinPtr->getFirstVisibleItemIndex()+1;
-
-	struct tm t;
-	if(year > 2089){
-		year =year-2089+2010;
-	}
-	t.tm_year = year-1900;
-	if(month > 12){
-		month -= 12;
-	}
-	t.tm_mon = month - 1;
-
-	int index = mListviewmonthPtr->getFirstVisibleItemIndex()+1;
-	index = index%12;
-	int size = dayTab[index];
-	if(index == 1){
-		int index = mListviewYearPtr->getFirstVisibleItemIndex()+2011;
-		if(index%4 == 0){
-			size = 29;
-		}
-	}
-	if(day > size){
-		day -= size;
-	}
-
-	t.tm_mday = day;
-	if(hour > 23){
-		hour = 0;
-	}
-	t.tm_hour = hour;
-	if(minute > 59){
-		minute = 0;
-	}
-	t.tm_min = minute;
-	t.tm_sec = 1;
-
-	LOGD("tm_year:%d",t.tm_year);
-	LOGD("t.tm_mon:%d",t.tm_mon);
-	LOGD("t.tm_mday:%d",t.tm_mday);
-	LOGD("t.tm_hour:%d",t.tm_hour);
-	LOGD("t.tm_min:%d",t.tm_min);
-	LOGD("t.tm_sec:%d",t.tm_sec);
-
-	TimeHelper::setDateTime(&t);
-
-    return false;
-}
+//
+//static void onListItemClick_ListviewMin(ZKListView *pListView, int index, int id) {
+//    //LOGD(" onListItemClick_ ListviewMin  !!!\n");
+//	pListView->setSelection(index-1);
+//}
+//static int daysize = 0;
+//static int getListItemCount_ListviewDay(const ZKListView *pListView) {
+//    //LOGD(" getListItemCount_ ListviewDay  !!!\n");
+//	int index = mListviewmonthPtr->getFirstVisibleItemIndex()+1;
+//	index = index%12;
+//	int size = dayTab[index];
+//	if(index == 1){
+//		int index = mListviewYearPtr->getFirstVisibleItemIndex()+2011;
+//		if(index%4 == 0){
+//			size = 29;
+//		}
+//	}
+//	daysize = size;
+//    return size;
+//}
+//
+//static void obtainListItemData_ListviewDay(ZKListView *pListView,ZKListView::ZKListItem *pListItem, int index) {
+//    //LOGD(" obtainListItemData_ ListviewDay  !!!\n");
+//	pListItem->setText(index +1);
+//	int first = pListView->getFirstVisibleItemIndex();
+//	if((first == pListView->getListItemCount()-1) && (index == 0)){
+//		pListItem->setSelected(true);
+//	}else if(index == first+1){
+//		pListItem->setSelected(true);
+//	}else{
+//		pListItem->setSelected(false);
+//	}
+//}
+//
+//static void onListItemClick_ListviewDay(ZKListView *pListView, int index, int id) {
+//    //LOGD(" onListItemClick_ ListviewDay  !!!\n");
+//	if(index == 0) index = daysize;
+//	else if(index == daysize) index = 1;
+//	pListView->setSelection(index-1);
+//}
+//
+//static int getListItemCount_Listviewmonth(const ZKListView *pListView) {
+//    //LOGD(" getListItemCount_ Listviewmonth  !!!\n");
+//    return 12;
+//}
+//
+//static void obtainListItemData_Listviewmonth(ZKListView *pListView,ZKListView::ZKListItem *pListItem, int index) {
+//    //LOGD(" obtainListItemData_ Listviewmonth  !!!\n");
+//	pListItem->setText(index +1);
+//	int first = pListView->getFirstVisibleItemIndex();
+//	if((first == pListView->getListItemCount()-1) && (index == 0)){
+//		pListItem->setSelected(true);
+//	}else if(index == first+1){
+//		pListItem->setSelected(true);
+//	}else{
+//		pListItem->setSelected(false);
+//	}
+//}
+//
+//static void onListItemClick_Listviewmonth(ZKListView *pListView, int index, int id) {
+//    //LOGD(" onListItemClick_ Listviewmonth  !!!\n");
+//	if(index == 0) index = 12;
+//	else if(index == 12) index = 1;
+//	pListView->setSelection(index-1);
+//}
+//
+//static int getListItemCount_ListviewYear(const ZKListView *pListView) {
+//    //LOGD(" getListItemCount_ ListviewYear  !!!\n");
+//    return 80;
+//}
+//
+//static void obtainListItemData_ListviewYear(ZKListView *pListView,ZKListView::ZKListItem *pListItem, int index) {
+//    //LOGD(" obtainListItemData_ ListviewYear  !!!\n");
+//	pListItem->setText(index +2010);
+//	int first = pListView->getFirstVisibleItemIndex();
+//	if((first == pListView->getListItemCount()-1) && (index == 0)){
+//		pListItem->setSelected(true);
+//	}else if(index == first+1){
+//		pListItem->setSelected(true);
+//	}else{
+//		pListItem->setSelected(false);
+//	}
+//}
+//
+//static void onListItemClick_ListviewYear(ZKListView *pListView, int index, int id) {
+//    //LOGD(" onListItemClick_ ListviewYear  !!!\n");
+//	if(index == 0) index = 80;
+//	else if(index == 80) index = 1;
+//	pListView->setSelection(index-1);
+//}
 static bool onButtonClick_VolButton(ZKButton *pButton) {
     //LOGD(" ButtonClick VolButton !!!\n");
 	if(mVolWindowPtr->isWndShow()){
@@ -1002,7 +949,6 @@ static bool onButtonClick_ListButton(ZKButton *pButton) {
 }
 
 
-
 /**
  * 收到串口数据
  */
@@ -1011,15 +957,36 @@ static void onProtocolDataUpdate(const SProtocolData &data) {
 	string s2 = string(data.receive, 0, data.reclen);
 	LOGD("%s", s2.c_str());
 
-	string page = "";
+	string type = "";
 	//解析json
 	Json::Reader reader;
 	Json::Value root2;
 	if (reader.parse(s2, root2, false)) {
 		LOGD("解析成功");
-		if (root2.isMember("page"))
-			page = root2["page"].asString();
-		if (page == "page1")
-			DealPage1(root2);
+		if (root2.isMember("type"))
+			type = root2["type"].asString();
+
+		//分别处理
+		if (type == "page0")
+			DealPage0(root2);
+		if (type == "page0_init")
+			DealPage0_init(root2);
+		if (type == "inner")
+			inner_init(root2);
    }
+}
+static void obtainListItemData_Listview2(ZKListView *pListView,ZKListView::ZKListItem *pListItem, int index) {
+    //LOGD(" obtainListItemData_ Listview2  !!!\n");
+	ZKListView::ZKListSubItem* subitem = pListItem->findSubItemByID(
+			ID_MAIN_SubItem2);
+	if (lamplistSel & (1 << index))
+		subitem->setSelected(true);
+	else
+		subitem->setSelected(false);
+
+	if (LampName[index] == "")
+		subitem->setVisible(false);
+	else
+		subitem->setVisible(true);
+	pListItem->setText(LampName[index].c_str());
 }

@@ -72,8 +72,73 @@ static void onUI_quit() {
  */
 static void onProtocolDataUpdate(const SProtocolData &data) {
     //串口数据回调接口
+	string s2 = string(data.receive, 0, data.reclen);
+//	LOGD("%s", s2.c_str());
 
-    LOGD("Hixxxxx");
+	string type = "";
+	string strdata ="";
+	//解析json
+	Json::Reader reader;
+	Json::Value root2;
+	if (reader.parse(s2, root2, false)) {
+		if (root2.isMember("type"))
+			type = root2["type"].asString();
+
+		//分别处理
+		if (type == "screensaver"){
+			strdata = root2["data"].asString();
+//			LOGD("%s", strdata.c_str());
+			int p1 = 0;
+			int p2 = 0 ;
+			string tmp = "";
+
+		    struct tm *t = TimeHelper::getDateTime();
+
+		    //年
+			p2 = strdata.find("-", p1);
+			tmp = strdata.substr(p1, p2-p1);
+			p1 = p2+1;
+			t->tm_year = atoi(tmp.c_str()) - 1900;
+
+			//月
+			p2 = strdata.find("-", p1);
+			tmp = strdata.substr(p1, p2-p1);
+			p1 = p2+1;
+			t->tm_mon = atoi(tmp.c_str())-1;
+
+			//日
+			p2 = strdata.find("-", p1);
+			tmp = strdata.substr(p1, p2-p1);
+			p1 = p2+1;
+			t->tm_mday = atoi(tmp.c_str());
+
+			//时
+			p2 = strdata.find("-", p1);
+			tmp = strdata.substr(p1, p2-p1);
+			p1 = p2+1;
+			t->tm_hour = atoi(tmp.c_str());
+
+			//分
+			p2 = strdata.find("-", p1);
+			tmp = strdata.substr(p1, p2-p1);
+			p1 = p2+1;
+			t->tm_min = atoi(tmp.c_str());
+
+			//秒
+			p2 = strdata.find("-", p1);
+			tmp = strdata.substr(p1, p2-p1);
+			p1 = p2+1;
+			LOGD("tmp_sec=>%s", tmp.c_str());
+			t->tm_sec = atoi(tmp.c_str());
+
+			//周
+			p2 = strdata.length();
+			tmp = strdata.substr(p1, p2-p1);
+			t->tm_wday = atoi(tmp.c_str());
+
+		    TimeHelper::setDateTime(t);
+		}
+   }
 }
 
 /**

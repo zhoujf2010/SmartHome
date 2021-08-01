@@ -4,14 +4,13 @@
 #include "mainActivity.h"
 
 /*TAG:GlobalVariable全局变量*/
+static ZKButton* mbtnClearPtr;
+static ZKButton* mbtnResetPtr;
+static ZKButton* mbtnGetIPPtr;
+static ZKTextView* mtxtTextinfoPtr;
+static ZKTextView* mTextView3Ptr;
+static ZKTextView* mTextView2Ptr;
 static ZKTextView* mTextview6Ptr;
-static ZKTextView* mTextview12Ptr;
-static ZKButton* mButtonSavePtr;
-static ZKListView* mListviewMinPtr;
-static ZKListView* mListviewHourPtr;
-static ZKListView* mListviewDayPtr;
-static ZKListView* mListviewmonthPtr;
-static ZKListView* mListviewYearPtr;
 static ZKWindow* mWindow7Ptr;
 static ZKTextView* mTextview18Ptr;
 static ZKTextView* mTextview17Ptr;
@@ -98,7 +97,9 @@ typedef struct {
 
 /*TAG:ButtonCallbackTab按键映射表*/
 static S_ButtonCallback sButtonCallbackTab[] = {
-    ID_MAIN_ButtonSave, onButtonClick_ButtonSave,
+    ID_MAIN_btnClear, onButtonClick_btnClear,
+    ID_MAIN_btnReset, onButtonClick_btnReset,
+    ID_MAIN_btnGetIP, onButtonClick_btnGetIP,
     ID_MAIN_Button10, onButtonClick_Button10,
     ID_MAIN_Button1, onButtonClick_Button1,
     ID_MAIN_Button9, onButtonClick_Button9,
@@ -139,11 +140,6 @@ typedef struct {
 }S_ListViewFunctionsCallback;
 /*TAG:ListViewFunctionsCallback*/
 static S_ListViewFunctionsCallback SListViewFunctionsCallbackTab[] = {
-    ID_MAIN_ListviewMin, getListItemCount_ListviewMin, obtainListItemData_ListviewMin, onListItemClick_ListviewMin,
-    ID_MAIN_ListviewHour, getListItemCount_ListviewHour, obtainListItemData_ListviewHour, onListItemClick_ListviewHour,
-    ID_MAIN_ListviewDay, getListItemCount_ListviewDay, obtainListItemData_ListviewDay, onListItemClick_ListviewDay,
-    ID_MAIN_Listviewmonth, getListItemCount_Listviewmonth, obtainListItemData_Listviewmonth, onListItemClick_Listviewmonth,
-    ID_MAIN_ListviewYear, getListItemCount_ListviewYear, obtainListItemData_ListviewYear, onListItemClick_ListviewYear,
     ID_MAIN_Listview2, getListItemCount_Listview2, obtainListItemData_Listview2, onListItemClick_Listview2,
     ID_MAIN_ListviewTempture, getListItemCount_ListviewTempture, obtainListItemData_ListviewTempture, onListItemClick_ListviewTempture,
     ID_MAIN_ListViewMode, getListItemCount_ListViewMode, obtainListItemData_ListViewMode, onListItemClick_ListViewMode,
@@ -204,14 +200,13 @@ const char* mainActivity::getAppName() const{
 //TAG:onCreate
 void mainActivity::onCreate() {
 	Activity::onCreate();
+    mbtnClearPtr = (ZKButton*)findControlByID(ID_MAIN_btnClear);
+    mbtnResetPtr = (ZKButton*)findControlByID(ID_MAIN_btnReset);
+    mbtnGetIPPtr = (ZKButton*)findControlByID(ID_MAIN_btnGetIP);
+    mtxtTextinfoPtr = (ZKTextView*)findControlByID(ID_MAIN_txtTextinfo);
+    mTextView3Ptr = (ZKTextView*)findControlByID(ID_MAIN_TextView3);
+    mTextView2Ptr = (ZKTextView*)findControlByID(ID_MAIN_TextView2);
     mTextview6Ptr = (ZKTextView*)findControlByID(ID_MAIN_Textview6);
-    mTextview12Ptr = (ZKTextView*)findControlByID(ID_MAIN_Textview12);
-    mButtonSavePtr = (ZKButton*)findControlByID(ID_MAIN_ButtonSave);
-    mListviewMinPtr = (ZKListView*)findControlByID(ID_MAIN_ListviewMin);if(mListviewMinPtr!= NULL){mListviewMinPtr->setListAdapter(this);mListviewMinPtr->setItemClickListener(this);}
-    mListviewHourPtr = (ZKListView*)findControlByID(ID_MAIN_ListviewHour);if(mListviewHourPtr!= NULL){mListviewHourPtr->setListAdapter(this);mListviewHourPtr->setItemClickListener(this);}
-    mListviewDayPtr = (ZKListView*)findControlByID(ID_MAIN_ListviewDay);if(mListviewDayPtr!= NULL){mListviewDayPtr->setListAdapter(this);mListviewDayPtr->setItemClickListener(this);}
-    mListviewmonthPtr = (ZKListView*)findControlByID(ID_MAIN_Listviewmonth);if(mListviewmonthPtr!= NULL){mListviewmonthPtr->setListAdapter(this);mListviewmonthPtr->setItemClickListener(this);}
-    mListviewYearPtr = (ZKListView*)findControlByID(ID_MAIN_ListviewYear);if(mListviewYearPtr!= NULL){mListviewYearPtr->setListAdapter(this);mListviewYearPtr->setItemClickListener(this);}
     mWindow7Ptr = (ZKWindow*)findControlByID(ID_MAIN_Window7);
     mTextview18Ptr = (ZKTextView*)findControlByID(ID_MAIN_Textview18);
     mTextview17Ptr = (ZKTextView*)findControlByID(ID_MAIN_Textview17);

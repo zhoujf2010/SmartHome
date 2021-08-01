@@ -26,14 +26,13 @@
 #include "window/ZKSlideWindow.h"
 
 /*TAG:Macro宏ID*/
+#define ID_MAIN_btnClear    20019
+#define ID_MAIN_btnReset    20015
+#define ID_MAIN_btnGetIP    20018
+#define ID_MAIN_txtTextinfo    50012
+#define ID_MAIN_TextView3    50023
+#define ID_MAIN_TextView2    50022
 #define ID_MAIN_Textview6    50006
-#define ID_MAIN_Textview12    50012
-#define ID_MAIN_ButtonSave    20015
-#define ID_MAIN_ListviewMin    80006
-#define ID_MAIN_ListviewHour    80007
-#define ID_MAIN_ListviewDay    80005
-#define ID_MAIN_Listviewmonth    80008
-#define ID_MAIN_ListviewYear    80010
 #define ID_MAIN_Window7    110011
 #define ID_MAIN_Textview18    50019
 #define ID_MAIN_Textview17    50018
