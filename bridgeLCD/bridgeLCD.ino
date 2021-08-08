@@ -123,6 +123,7 @@ void SendtoLCD(byte* data, int len) {
 StaticJsonDocument<200> doc;
 
 String recDeal(String msg) {
+  doc.clear();
   // Deserialize the JSON document
   DeserializationError error = deserializeJson(doc, msg.c_str());
   // Test if parsing succeeds.
@@ -180,7 +181,6 @@ void loop() {
     if (tmp != "")
       SendtoLCD((byte*)tmp.c_str(), tmp.length());
 
-
     if (serverClient && serverClient.connected()) {
       serverClient.write(recstr.c_str(), recstr.length());
     }
@@ -205,10 +205,14 @@ void loop() {
       char c = serverClient.read();
       buf2[p] = c;
       p++;
+      if (p >= 255)
+        p = 0;
     }
 
     if (p > 0) {
       SendtoLCD(buf2, p);
+//    uint32_t free = system_get_free_heap_size(); // get free ram   
+//    Serial.println(free); // output ram to serial   
     }
   }
 

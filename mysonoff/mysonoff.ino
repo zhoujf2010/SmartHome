@@ -1,16 +1,19 @@
-#include <ESP8266WiFi.h>
-#include <ESP8266WebServer.h>
-#include <EEPROM.h>
 #include <Ticker.h>
-#include <ArduinoOTA.h>
-#include <PubSubClient.h>
-#include "wifimanage.h"
+#include "src/commonlib/wifimanage.h"
+#include "src/commonlib/otatool.h"
+#include "src/commonlib/common.h"
 
 
 //易微联设备
 String DEVICE    =      "sonoff";
 #define BUTTON          0
 #define RELAY           12
+#define RELAY1           5
+#define RELAY2           4
+
+#define BUTTON1          9
+#define BUTTON2          10
+
 #define LED             13
 #define LEDON           LOW
 #define LEDOFF          HIGH
@@ -37,101 +40,78 @@ Ticker btn_timer;
 Ticker led_timer;
 
 unsigned long count = 0;                                     // (Do not Change)
-bool OTAupdate = false;
+unsigned long count1 = 0;                                     // (Do not Change)
+unsigned long count2 = 0;                                     // (Do not Change)
 bool sendStatus = false;                                     // (Do not Change)
+bool sendStatus1 = false;                                     // (Do not Change)
+bool sendStatus2 = false;                                     // (Do not Change)
 bool requestRestart = false;                                 // (Do not Change)
-bool hasmqtt = false;
 
 String MQTT_TOPIC = "";
-
-WiFiClient wifiClient;
-PubSubClient mqttClient(wifiClient);
-
 
 void setup()
 {
   Serial.begin(115200);
-  EEPROM.begin(512);
-  Serial.println();
+  Serial.println("start......");
 
-  pinMode(LED, OUTPUT);
-  pinMode(RELAY, OUTPUT);
-  pinMode(BUTTON, INPUT);
-  digitalWrite(LED, LEDOFF);
-  digitalWrite(RELAY, LOW);
+  int ch = StartInit();
+  Serial.print("ReadResetTimes:");
+  Serial.println(ch);
+  if (ch > 5 ) {
+    StartError();
+  }
 
   if (DEVICE == "orvibo")  {
     pinMode(4, OUTPUT);
     digitalWrite(4, LOW); //需把绿灯关了，否则红灯也不亮
   }
 
+  //设置IO口模式
+  pinMode(BUTTON, INPUT);
+  pinMode(BUTTON1, INPUT);
+  pinMode(BUTTON2, INPUT);
+  
+  pinMode(LED, OUTPUT);
+  pinMode(RELAY, OUTPUT);
+  pinMode(RELAY1, OUTPUT);
+  pinMode(RELAY2, OUTPUT);
+  digitalWrite(LED, LEDOFF);
+
+  //恢复上次开关状态
+  digitalWrite(RELAY, readCusVal(0) == 1 ? HIGH : LOW);
+  digitalWrite(RELAY1, readCusVal(1) == 1 ? HIGH : LOW);
+  digitalWrite(RELAY2, readCusVal(2) == 1 ? HIGH : LOW);
+
   btn_timer.attach(0.05, button);
   led_timer.attach(0.5, blink);
 
   startWifi();  //连接网络信息
-  initOTA();// 初使化OTA模式
+  initOTA(LED);// 初使化OTA模式
+
   led_timer.detach();
   led_timer.attach(0.2, blink);
 
-  if (readmqttip() != "") {
-    char* c = new char[200];  //深度copy一下，否则直接用就不行
-    strcpy(c, readmqttip().c_str());
-    mqttClient.setServer(c, 1883);
-    mqttClient.setCallback(callback);
-    connectMQTT();
-    hasmqtt = true;
-  }
+  String MQTT_TOPIC = "home/" + DEVICE + "/" + readID();
+  initMQTT(MQTT_TOPIC, callback);
+
+  StartFinish();
 
   led_timer.detach();
   digitalWrite(LED, LEDON); //灯常亮，表示连接成功
-}
-
-void initOTA() {
-  ArduinoOTA.onStart([]() {
-    OTAupdate = true;
-    blinkLED(LED, 400, 2);
-    digitalWrite(LED, LEDON);
-    Serial.println("OTA Update Initiated . . .");
-  });
-  ArduinoOTA.onEnd([]() {
-    Serial.println("\nOTA Update Ended . . .s");
-    ESP.restart();
-  });
-  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-    digitalWrite(LED, LEDOFF);
-    delay(5);
-    digitalWrite(LED, LEDON);
-    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-  });
-  ArduinoOTA.onError([](ota_error_t error) {
-    blinkLED(LED, 40, 2);
-    OTAupdate = false;
-    Serial.printf("OTA Error [%u] ", error);
-    if (error == OTA_AUTH_ERROR) Serial.println(". . . . . . . . . . . . . . . Auth Failed");
-    else if (error == OTA_BEGIN_ERROR) Serial.println(". . . . . . . . . . . . . . . Begin Failed");
-    else if (error == OTA_CONNECT_ERROR) Serial.println(". . . . . . . . . . . . . . . Connect Failed");
-    else if (error == OTA_RECEIVE_ERROR) Serial.println(". . . . . . . . . . . . . . . Receive Failed");
-    else if (error == OTA_END_ERROR) Serial.println(". . . . . . . . . . . . . . . End Failed");
-  });
-  ArduinoOTA.setHostname(readID().c_str());
-  ArduinoOTA.begin();
 }
 
 void blink() {
   digitalWrite(LED, !digitalRead(LED));
 }
 
-void blinkLED(int pin, int duration, int n) {
-  for (int i = 0; i < n; i++)  {
-    digitalWrite(pin, LEDON);
-    delay(duration);
-    digitalWrite(pin, LEDOFF);
-    delay(duration);
-  }
-}
-
 //按钮处理
 void button() {
+  Serial.print("dt1->");
+  Serial.print(digitalRead(BUTTON)?"1":"0");
+  Serial.print(digitalRead(BUTTON1)?"  1":"  0");
+  Serial.print(digitalRead(BUTTON2)?"  1":"  0");
+  Serial.println("");
+  
   if (!digitalRead(BUTTON)) {
     count++;
     if (count > 100) {//长按5秒
@@ -144,47 +124,42 @@ void button() {
       digitalWrite(RELAY, !digitalRead(RELAY));
       sendStatus = true;
     }
-    else if (count > 100) {
-      Serial.println("\n\nSonoff Rebooting . . . . . . . . Please Wait");
-      clearroom();
-      blinkLED(LED, 400, 4);
-      ESP.restart();
-    }
+//    else if (count > 100) {
+//      Serial.println("\n\nSonoff Rebooting . . . . . . . . Please Wait");
+//      clearroom();
+//      blinkLED(LED, 400, 4);
+//      ESP.restart();
+//    }
     count = 0;
+  }
+
+
+  if (!digitalRead(BUTTON1)) {
+    count1++;
+  }
+  else {
+    if (count1 > 1 && count1 <= 40) {
+      digitalWrite(RELAY1, !digitalRead(RELAY1));
+      sendStatus1 = true;
+    }
+    count1 = 0;
+  }
+
+  if (!digitalRead(BUTTON2)) {
+    count2++;
+  }
+  else {
+    if (count2 > 1 && count2 <= 40) {
+      digitalWrite(RELAY2, !digitalRead(RELAY2));
+      sendStatus2 = true;
+    }
+    count2 = 0;
   }
 }
 
 unsigned long checkLastTime;
 
-void connectMQTT() {
-
-
-  if (!mqttClient.connected()) {
-    if (millis() < checkLastTime + 5000) {
-      return ;  //5秒内不重复检测
-    }
-    checkLastTime = millis();
-
-    Serial.print("Attempting MQTT connection...");
-    if (mqttClient.connect(readID().c_str())) {
-      Serial.println("connected");
-      MQTT_TOPIC = "home/" + DEVICE + "/" + readID();
-      mqttClient.subscribe(MQTT_TOPIC.c_str());
-      Serial.println("Topic:" + MQTT_TOPIC);
-    } else {
-      Serial.print("failed, rc=");
-      Serial.print(mqttClient.state());
-      Serial.println(" try again in 5 seconds");
-      delay(5000);// Wait 5 seconds before retrying
-    }
-  }
-}
-
-
-void callback(char* topic, byte* payload, unsigned int length) {
-  String payload_string = "";
-  for (int i = 0; i < length; ++i)
-    payload_string += char(payload[i]);
+void callback(String payload_string) {
   Serial.println("receive:" + payload_string);
 
   if (payload_string == "stat") {
@@ -192,10 +167,28 @@ void callback(char* topic, byte* payload, unsigned int length) {
   else if (payload_string == "on") {
     digitalWrite(LED, LEDOFF); //有操作后，状态灯就关闭
     digitalWrite(RELAY, HIGH);
+      writeCusVal(0,1);
   }
   else if (payload_string == "off") {
     digitalWrite(LED, LEDOFF); //有操作后，状态灯就关闭
     digitalWrite(RELAY, LOW);
+      writeCusVal(0,0);
+  }
+  else if (payload_string == "on1") {
+    digitalWrite(RELAY1, HIGH);
+      writeCusVal(1,1);
+  }
+  else if (payload_string == "off1") {
+    digitalWrite(RELAY1, LOW);
+      writeCusVal(1,0);
+  }
+  else if (payload_string == "on2") {
+    digitalWrite(RELAY2, HIGH);
+      writeCusVal(2,1);
+  }
+  else if (payload_string == "off2") {
+    digitalWrite(RELAY2, LOW);
+      writeCusVal(2,0);
   }
   else if (payload_string == "reset") {
     blinkLED(LED, 400, 4);
@@ -204,82 +197,45 @@ void callback(char* topic, byte* payload, unsigned int length) {
   sendStatus = true;
 }
 
-int kUpdFreq = 1;                                            // Update frequency in Mintes to check for mqtt connection
-int kRetries = 10;                                           // WiFi retry count. Increase if not connecting to router.
-unsigned long TTasks;
-void timedTasks() {
-  if ((millis() > TTasks + (kUpdFreq * 60000)) || (millis() < TTasks)) {
-    TTasks = millis();
-    checkConnection();
-  }
-}
-
-void checkConnection() {
-  if (WiFi.status() != WL_CONNECTED) {
-    ESP.restart();
-  }
-  //  if (WiFi.status() == WL_CONNECTED)  {
-  //    if (mqttClient.connected()) {
-  //      Serial.println("mqtt broker connection . . . . . . . . . . OK");
-  //    }
-  //    else {
-  //      Serial.println("mqtt broker connection . . . . . . . . . . LOST");
-  //      requestRestart = true;
-  //    }
-  //  }
-  //  else {
-  //    Serial.println("WiFi connection . . . . . . . . . . LOST");
-  //    requestRestart = true;
-  //  }
-
-  //  if (!mqttClient.connected()) {
-  //    //    if (!isconnecting) {
-  //    //      isconnecting = true;
-  //    //      Serial.println("start connect mqtt");
-  //    //      mqtt_timer.once(0.1, reconnect);
-  //    //      mqtt_timer.detach();
-  //    //    }
-  //
-  //    Serial.print("Attempting MQTT connection...");
-  //    if (mqttClient.connect(readID().c_str())) {
-  //      Serial.println("connected");
-  //      mqttClient.subscribe(MQTT_TOPIC);
-  //    } else {
-  //      Serial.print("failed, rc=");
-  //      Serial.print(mqttClient.state());
-  //      Serial.println(" try again in 5 seconds");
-  //      // Wait 5 seconds before retrying
-  ////      delay(5000);
-  //    }
-  //  }
-}
-
-
 void loop() {
-  ArduinoOTA.handle();
-  if (OTAupdate)
+  if (loopOTA())
     return ;
-
-  timedTasks();
-
   wifiloop();
 
-  if (hasmqtt && !mqttClient.connected()) {
-    connectMQTT();
-  }
-
   if (sendStatus) { //发送至mq
-  if (hasmqtt && mqttClient.connected()) {
-    String path = MQTT_TOPIC + "/stat";
     if (digitalRead(RELAY) == HIGH)  {
-      mqttClient.publish(path.c_str(), "on");
+      sendmqtt("/stat", "on");
       Serial.println("Relay . . . . . . . . . . . . . . . . . . ON");
+      writeCusVal(0,1);
     } else {
-      mqttClient.publish(path.c_str(), "off");
+      sendmqtt("/stat", "off");
       Serial.println("Relay . . . . . . . . . . . . . . . . . . OFF");
+      writeCusVal(0,0);
     }
-  }
     sendStatus = false;
   }
-  mqttClient.loop();
+  if (sendStatus1) { //发送至mq
+    if (digitalRead(RELAY1) == HIGH)  {
+      sendmqtt("/stat", "on1");
+      Serial.println("Relay . . . . . . . . . . . . . . . . . . ON1");
+      writeCusVal(1,1);
+    } else {
+      sendmqtt("/stat", "off1");
+      Serial.println("Relay . . . . . . . . . . . . . . . . . . OFF1");
+      writeCusVal(1,0);
+    }
+    sendStatus1 = false;
+  }
+  if (sendStatus2) { //发送至mq
+    if (digitalRead(RELAY2) == HIGH)  {
+      sendmqtt("/stat", "on2");
+      Serial.println("Relay . . . . . . . . . . . . . . . . . . ON2");
+      writeCusVal(2,1);
+    } else {
+      sendmqtt("/stat", "off2");
+      Serial.println("Relay . . . . . . . . . . . . . . . . . . OFF2");
+      writeCusVal(2,0);
+    }
+    sendStatus2 = false;
+  }
 }

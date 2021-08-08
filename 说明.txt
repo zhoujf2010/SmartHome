@@ -25,3 +25,9 @@ mysonoff
 web上传可用命令：
 C:\Users\zjf\AppData\Local\Arduino15\packages\esp8266\tools\python3\3.7.2-post1/python3 C:\Users\zjf\AppData\Local\Arduino15\packages\esp8266\hardware\esp8266\2.7.0/tools/espota.py -i 192.168.3.215 -p 8266 --auth= -f C:\Users\zjf\AppData\Local\Temp\arduino_build_826052/bridgeLCD.ino.bin 
 
+
+
+C:\Users\zjf\AppData\Local\Arduino15\packages\esp8266\tools\python3\3.7.2-post1/python3 C:\Users\zjf\AppData\Local\Arduino15\packages\esp8266\hardware\esp8266\2.7.0/tools/upload.py --chip esp8266 --port COM11 --baud 115200 --before default_reset --after hard_reset write_flash 0x0 C:\Users\zjf\AppData\Local\Temp\arduino_build_482875/mysonoff.ino.bin 
+
+
+

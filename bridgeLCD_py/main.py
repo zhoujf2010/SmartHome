@@ -11,6 +11,13 @@ import threading
 import datetime
 import logging
 
+#TODO 分出设备类 读取天气预报 微信对接
+
+class Devices():
+    def __init__(self) -> None:
+        pass
+
+
 
 
 class SockClient():
@@ -30,10 +37,10 @@ class SockClient():
 
     def start(self):
         x = threading.Thread(target=self.DoReceive)
-        logging.info("Main    : before running thread")
+        logger.info("Main    : before running thread")
         x.start()
         y = threading.Thread(target=self.SendTime)
-        logging.info("Main    : before running thread")
+        logger.info("Main    : before running thread")
         y.start()
 
     def SendTime(self):
@@ -41,12 +48,14 @@ class SockClient():
         while self.running:
             newdt = datetime.datetime.now()
             dt = newdt - olddt
-            if dt.total_seconds() <5:
+            if dt.total_seconds() < 5:
+                time.sleep(0.5)
                 continue
             olddt = newdt
             obj = {}
             obj["type"] = "screensaver"
             obj["data"] = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%w")
+            logger.debug("send date")
             self.sendcmd(json.dumps(obj))
 
     def DoReceive(self):
@@ -59,7 +68,7 @@ class SockClient():
                     self.sock.settimeout(None)
                     self.connected = True
                 except socket.error as e:
-                    print("Socket Connect Error:%s" % e)
+                    logger.error('socket Connect error:' + str(e))
                     pass
 
             try:
@@ -70,17 +79,17 @@ class SockClient():
                     if back != "":
                         self.sendcmd(back)
             except socket.error as e:
-                print('socket running error:', str(e))
+                logger.error('socket running error:' + str(e))
                 self.connected = False
 
-        print('SockClient Thread Exit\n')
+        logger.info('SockClient Thread Exit\n')
 
     def sendcmd(self, cmd):
         try:
             if self.connected:
                 self.sock.send(cmd.encode())
         except socket.error as e:
-            print('socket running error:', str(e))
+            logger.error('socket send error:' + str(e))
             self.connected = False
 
     def sendmethod(self, method, param):
@@ -94,7 +103,7 @@ class SockClient():
 
     def cmdexchange(self, msg):
         dt = json.loads(msg.strip("\0"))
-        print(dt)
+        logger.info("receive from LCD:" + msg.strip("\0"))
         tp = dt["type"]
         if tp == "init":
             if dt["value"] =="page0":
@@ -123,7 +132,7 @@ class SockClient():
 
     def onMqttmsg(self, client, userdata, msg):
         switch = str(msg.payload.decode("utf-8"))
-        print(msg.topic+" " + switch)
+        logger.info('receive from mqtt=>' + msg.topic+" " + switch)
         obj = {}
         obj["type"] = "page0"
         obj["index"] = 0
@@ -135,7 +144,7 @@ class SockClient():
         self.sendcmd(json.dumps(obj))
 
     def onMqttConnect(self, client, userdata, flags, rc):
-        print("Connected with result code "+str(rc))
+        logger.info("MQTT Connected with result code "+str(rc))
 
         # Subscribing in on_connect() means that if we lose the connection and
         # reconnect then subscriptions will be renewed.
@@ -147,11 +156,26 @@ class SockClient():
 
 
 if __name__ == '__main__':
-    s = SockClient(None, "192.168.3.215", 81)
-    s.sendcmd("aa")
-    print(1)
-    time.sleep(1)
-    s.sendcmd("hello thereasdfasd")
+    # create logger with 'spam_application'
+    logger = logging.getLogger('bridgeLCD')
+    logger.setLevel(logging.DEBUG)
+    # create file handler which logs even debug messages
+    fh = logging.FileHandler('log.log')
+    fh.setLevel(logging.DEBUG)
+    # create console handler with a higher log level
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    # create formatter and add it to the handlers
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    fh.setFormatter(formatter)
+    ch.setFormatter(formatter)
+    # add the handlers to the logger
+    logger.addHandler(fh)
+    logger.addHandler(ch)
+
+
+    logger.info("started")
+    s = SockClient(None, "192.168.3.182", 81)
     s.start()
 
     # url = 'home/mylightsensor/MySonoff-df62df' #太阳能
