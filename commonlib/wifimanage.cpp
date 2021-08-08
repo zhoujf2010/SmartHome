@@ -7,9 +7,21 @@
 #include "common.h"
 #include <PubSubClient.h>
 
+String CurrentVersion ="1.0";
+String devicetype ="";
+
+
 ESP8266WebServer server(80);
 String readesid();
 String printEncryptionType(int thisType);
+
+void setVersion(String version){
+  CurrentVersion = version;
+}
+
+void setdevicetype(String type){
+  devicetype = type;
+}
 
 //加载页面
 void handle_AProot() {
@@ -24,7 +36,24 @@ void handle_AProot() {
 
   SServerSend += pagecontent1 + pagecontent2 + script + pagecontent3;
   server.send(200, "text/html", SServerSend);
-  delay(100);
+  delay(1);
+}
+
+
+void handle_version() {
+  server.send(200, "text/html", CurrentVersion);
+  delay(1);
+}
+
+
+void handle_name() {
+  server.send(200, "text/html", readID());
+  delay(1);
+}
+
+void handle_devicetype() {
+  server.send(200, "text/html", devicetype);
+  delay(1);
 }
 
 //清除room内容
@@ -36,11 +65,12 @@ void handle_clearAPeeprom() {
   ESP.restart();
 }
 
+bool NeedRestart = false;
+
 //重启
 void handle_APrestart() {
-  Serial.println(F("! Restarting in 1 sec! !"));
-  delay(1000);
-  ESP.restart();
+  NeedRestart = true;
+  server.send(200, "text/html", "OK");
 }
 
 
@@ -51,6 +81,7 @@ void handle_APsubmit() {
   String theid = server.arg("id");
   String themqttIP = server.arg("mqttIP");
 
+  String APwebstring = "";   // String to display
   if (thenewssid != "") {
     Serial.println(F("! Clearing eeprom !"));
     clearroom();
@@ -71,17 +102,16 @@ void handle_APsubmit() {
     for (int i = 0; i < themqttIP.length(); ++i)
       EEPROM.write(160 + i, themqttIP[i]);
 
-    String APwebstring = "";   // String to display
     if (EEPROM.commit())
       APwebstring = F("<div class=\"info\">Saved to eeprom... restart to boot into new wifi</div><br>\n");
     else
       APwebstring = F("<div class=\"info\">Couldn't write to eeprom. Please try again.</div><br>\n");
 
-    String SServerSend;
-    SServerSend = pageheader;
-    SServerSend += pagecontent1 + APwebstring + pagecontent2 + pagecontent3;
-    server.send(200, "text/html", SServerSend);
   }
+  String SServerSend;
+  SServerSend = pageheader;
+  SServerSend += pagecontent1 + APwebstring + pagecontent2 + pagecontent3;
+  server.send(200, "text/html", SServerSend);
 }
 
 
@@ -217,7 +247,7 @@ String readID() {
                    String(mac[WL_MAC_ADDR_LENGTH - 2], HEX) +
                    String(mac[WL_MAC_ADDR_LENGTH - 1], HEX);
     macID.toLowerCase();
-    id = "MySonoff-" + macID;
+    id = "MySmart-" + macID;
   }
   return id;
 }
@@ -231,13 +261,13 @@ String readesid() {
   return readData(0, 32);
 }
 
-String getIP(){
+String getIP() {
   String esid = readesid();
   if (esid != "") { //连接wifi
-     return WiFi.localIP().toString();
+    return WiFi.localIP().toString();
   }
   else { //启动热点
-     return WiFi.softAPIP().toString();
+    return WiFi.softAPIP().toString();
   }
 }
 
@@ -303,6 +333,9 @@ void startWifi() {
   server.on("/APsubmit", handle_APsubmit);
   server.on("/esprestart", handle_APrestart);
   server.on("/cleareeprom", handle_clearAPeeprom);
+  server.on("/version", handle_version);
+  server.on("/name", handle_name);
+  server.on("/devicetype", handle_devicetype);
   server.begin();
   Serial.println("HTTP server started");
 }
@@ -357,7 +390,9 @@ void connectMQTT() {
 void sendmqtt(String path, String msg) {
   String path2 = _MQTT_TOPIC + path;
 
-  mqttClient.publish(path2.c_str(), msg.c_str());
+  if (hasmqtt && mqttClient.connected()) {
+    mqttClient.publish(path2.c_str(), msg.c_str());
+  }
 }
 
 
@@ -373,8 +408,13 @@ void timedTasks() {
 
 
 void checkConnection() {
-  if (WiFi.status() != WL_CONNECTED) {
-    ESP.restart();
+  String esid = readesid();
+  if (esid != "") { //连接wifi
+    if (WiFi.status() != WL_CONNECTED) {
+      Serial.println("WiFi.status() != WL_CONNECTED), Restarted wifi");
+      //ESP.restart();
+      startWifi();
+    }
   }
   //  if (WiFi.status() == WL_CONNECTED)  {
   //    if (mqttClient.connected()) {
@@ -415,8 +455,12 @@ void checkConnection() {
 
 
 void wifiloop() {
-
-
+  if (NeedRestart) {
+    Serial.println(F("! Restarting in 1 sec! !"));
+    delay(1000);
+    ESP.restart();
+    return;
+  }
 
   timedTasks();
 

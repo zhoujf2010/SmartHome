@@ -2,6 +2,10 @@
 #include <PubSubClient.h>
 
 
+
+void setVersion(String version);
+void setdevicetype(String type);
+
 void startWifi();
 void wifiloop();
 void clearroom();

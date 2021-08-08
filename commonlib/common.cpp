@@ -41,3 +41,14 @@ int StartInit(){
   EEPROM.commit();
   return ch;
 }
+
+
+int writeCusVal(int pos,int val){
+  EEPROM.write(226 + pos, val);
+  EEPROM.commit();
+}
+
+int readCusVal(int pos){
+  int ch = EEPROM.read(226 + pos);
+  return ch;
+}
