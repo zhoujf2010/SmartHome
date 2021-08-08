@@ -26,6 +26,8 @@
 #include "window/ZKSlideWindow.h"
 
 /*TAG:Macro宏ID*/
+#define ID_MAIN_WinSetting    110011
+#define ID_MAIN_WinSwitch1    110005
 #define ID_MAIN_btnClear    20019
 #define ID_MAIN_btnReset    20015
 #define ID_MAIN_btnGetIP    20018
@@ -33,7 +35,6 @@
 #define ID_MAIN_TextView3    50023
 #define ID_MAIN_TextView2    50022
 #define ID_MAIN_Textview6    50006
-#define ID_MAIN_Window7    110011
 #define ID_MAIN_Textview18    50019
 #define ID_MAIN_Textview17    50018
 #define ID_MAIN_Button10    20014
@@ -45,7 +46,6 @@
 #define ID_MAIN_Listview2    80002
 #define ID_MAIN_Textview10    50010
 #define ID_MAIN_Textview1    50001
-#define ID_MAIN_Window3    110005
 #define ID_MAIN_Textview16    50016
 #define ID_MAIN_Textview15    50015
 #define ID_MAIN_Textview14    50014

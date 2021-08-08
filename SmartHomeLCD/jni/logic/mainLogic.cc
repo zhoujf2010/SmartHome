@@ -134,6 +134,22 @@ static int getListItemCount_Listview2(const ZKListView *pListView) {
     return 9;
 }
 
+static void obtainListItemData_Listview2(ZKListView *pListView,ZKListView::ZKListItem *pListItem, int index) {
+    //LOGD(" obtainListItemData_ Listview2  !!!\n");
+	ZKListView::ZKListSubItem* subitem = pListItem->findSubItemByID(
+			ID_MAIN_SubItem2);
+	if (lamplistSel & (1 << index))
+		subitem->setSelected(true);
+	else
+		subitem->setSelected(false);
+
+	if (LampName[index] == "")
+		subitem->setVisible(false);
+	else
+		subitem->setVisible(true);
+	pListItem->setText(LampName[index].c_str());
+}
+
 static void onListItemClick_Listview2(ZKListView *pListView, int index, int id) {
 	int v = lamplistSel & (1 << index) ;
 	if (v > 0)
@@ -141,6 +157,7 @@ static void onListItemClick_Listview2(ZKListView *pListView, int index, int id) 
 	else
 		v = 1;
 
+	LOGD(" onListItemClick_ Listview2 %d  !!!\n",index);
 	char buf[50] = {0};
 	snprintf(buf, sizeof(buf), "{\"type\":\"page0\",\"index\":%d,\"value\":%d}", index,v);
 	sendProtocol(CMDID_INFO, buf, 50);
@@ -974,19 +991,4 @@ static void onProtocolDataUpdate(const SProtocolData &data) {
 		if (type == "inner")
 			inner_init(root2);
    }
-}
-static void obtainListItemData_Listview2(ZKListView *pListView,ZKListView::ZKListItem *pListItem, int index) {
-    //LOGD(" obtainListItemData_ Listview2  !!!\n");
-	ZKListView::ZKListSubItem* subitem = pListItem->findSubItemByID(
-			ID_MAIN_SubItem2);
-	if (lamplistSel & (1 << index))
-		subitem->setSelected(true);
-	else
-		subitem->setSelected(false);
-
-	if (LampName[index] == "")
-		subitem->setVisible(false);
-	else
-		subitem->setVisible(true);
-	pListItem->setText(LampName[index].c_str());
 }

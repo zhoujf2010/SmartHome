@@ -4,6 +4,8 @@
 #include "mainActivity.h"
 
 /*TAG:GlobalVariable全局变量*/
+static ZKWindow* mWinSettingPtr;
+static ZKWindow* mWinSwitch1Ptr;
 static ZKButton* mbtnClearPtr;
 static ZKButton* mbtnResetPtr;
 static ZKButton* mbtnGetIPPtr;
@@ -11,7 +13,6 @@ static ZKTextView* mtxtTextinfoPtr;
 static ZKTextView* mTextView3Ptr;
 static ZKTextView* mTextView2Ptr;
 static ZKTextView* mTextview6Ptr;
-static ZKWindow* mWindow7Ptr;
 static ZKTextView* mTextview18Ptr;
 static ZKTextView* mTextview17Ptr;
 static ZKButton* mButton10Ptr;
@@ -22,7 +23,6 @@ static ZKWindow* mWindow4Ptr;
 static ZKListView* mListview2Ptr;
 static ZKTextView* mTextview10Ptr;
 static ZKTextView* mTextview1Ptr;
-static ZKWindow* mWindow3Ptr;
 static ZKTextView* mTextview16Ptr;
 static ZKTextView* mTextview15Ptr;
 static ZKTextView* mTextview14Ptr;
@@ -200,6 +200,8 @@ const char* mainActivity::getAppName() const{
 //TAG:onCreate
 void mainActivity::onCreate() {
 	Activity::onCreate();
+    mWinSettingPtr = (ZKWindow*)findControlByID(ID_MAIN_WinSetting);
+    mWinSwitch1Ptr = (ZKWindow*)findControlByID(ID_MAIN_WinSwitch1);
     mbtnClearPtr = (ZKButton*)findControlByID(ID_MAIN_btnClear);
     mbtnResetPtr = (ZKButton*)findControlByID(ID_MAIN_btnReset);
     mbtnGetIPPtr = (ZKButton*)findControlByID(ID_MAIN_btnGetIP);
@@ -207,7 +209,6 @@ void mainActivity::onCreate() {
     mTextView3Ptr = (ZKTextView*)findControlByID(ID_MAIN_TextView3);
     mTextView2Ptr = (ZKTextView*)findControlByID(ID_MAIN_TextView2);
     mTextview6Ptr = (ZKTextView*)findControlByID(ID_MAIN_Textview6);
-    mWindow7Ptr = (ZKWindow*)findControlByID(ID_MAIN_Window7);
     mTextview18Ptr = (ZKTextView*)findControlByID(ID_MAIN_Textview18);
     mTextview17Ptr = (ZKTextView*)findControlByID(ID_MAIN_Textview17);
     mButton10Ptr = (ZKButton*)findControlByID(ID_MAIN_Button10);
@@ -218,7 +219,6 @@ void mainActivity::onCreate() {
     mListview2Ptr = (ZKListView*)findControlByID(ID_MAIN_Listview2);if(mListview2Ptr!= NULL){mListview2Ptr->setListAdapter(this);mListview2Ptr->setItemClickListener(this);}
     mTextview10Ptr = (ZKTextView*)findControlByID(ID_MAIN_Textview10);
     mTextview1Ptr = (ZKTextView*)findControlByID(ID_MAIN_Textview1);
-    mWindow3Ptr = (ZKWindow*)findControlByID(ID_MAIN_Window3);
     mTextview16Ptr = (ZKTextView*)findControlByID(ID_MAIN_Textview16);
     mTextview15Ptr = (ZKTextView*)findControlByID(ID_MAIN_Textview15);
     mTextview14Ptr = (ZKTextView*)findControlByID(ID_MAIN_Textview14);
