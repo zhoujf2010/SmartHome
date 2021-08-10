@@ -9,7 +9,7 @@
 
 String CurrentVersion ="1.0";
 String devicetype ="";
-
+int connectType = 0;
 
 ESP8266WebServer server(80);
 String readesid();
@@ -56,21 +56,20 @@ void handle_devicetype() {
   delay(1);
 }
 
+bool NeedRestart = false;
+
 //清除room内容
 void handle_clearAPeeprom() {
   Serial.println(F("! Clearing eeprom ! "));
   clearroom();
-  Serial.println(F("! Finished ! Restarting in 1 sec! !"));
-  delay(1000);
-  ESP.restart();
+  server.send(200, "text/html", "OK");
+  NeedRestart = true;
 }
-
-bool NeedRestart = false;
 
 //重启
 void handle_APrestart() {
-  NeedRestart = true;
   server.send(200, "text/html", "OK");
+  NeedRestart = true;
 }
 
 
@@ -262,13 +261,13 @@ String readesid() {
 }
 
 String getIP() {
-  String esid = readesid();
-  if (esid != "") { //连接wifi
+  if (connectType ==1) { //连接wifi
     return WiFi.localIP().toString();
   }
-  else { //启动热点
+  else if (connectType ==2) { //启动热点
     return WiFi.softAPIP().toString();
   }
+	return "";
 }
 
 //0-32 SID
@@ -310,6 +309,7 @@ void startWifi() {
     Serial.println("WiFi connected");
     Serial.println("IP address: ");
     Serial.println(WiFi.localIP());
+    connectType = 1;
   }
   else { //启动热点
 
@@ -327,6 +327,7 @@ void startWifi() {
     Serial.println(id);
     Serial.print(F("SoftAP IP address: "));
     Serial.println(WiFi.softAPIP());
+    connectType = 2;
   }
 
   server.on("/", handle_AProot);
@@ -408,8 +409,7 @@ void timedTasks() {
 
 
 void checkConnection() {
-  String esid = readesid();
-  if (esid != "") { //连接wifi
+  if (connectType ==1) { //连接wifi
     if (WiFi.status() != WL_CONNECTED) {
       Serial.println("WiFi.status() != WL_CONNECTED), Restarted wifi");
       //ESP.restart();

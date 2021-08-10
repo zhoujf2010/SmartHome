@@ -3,8 +3,8 @@
 #include "otatool.h"
 #include "common.h"
 
-String firmversion ="2.0";
-String DEVICE    =      "sonoff";
+String firmversion =    "2.0";
+String DEVICE      =    "common";
 
 #define LED             2
 #define LEDON           LOW
@@ -78,10 +78,6 @@ void callback(String payload_string) {
       digitalWrite(pin, HIGH);
   }
   else if (cmd == 2) {//读值
-//    if (digitalRead(pin) == HIGH)
-//      Serial.println("read:HIGH");
-//    else
-//      Serial.println("read:LOW");
     if (BUTTON >=0){
       btn_timer.detach();
       BUTTON = -1;
@@ -90,10 +86,6 @@ void callback(String payload_string) {
       BUTTON = pin;
       btn_timer.attach(0.05, button);
     }
-      
-      
-    //Serial.write(digitalRead(pin));
-//    sendmqtt("/stat", digitalRead(pin));
   }
 }
 

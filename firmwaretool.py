@@ -5,10 +5,16 @@
 
 import subprocess
 import requests
-import scapy.all as scapy
 import time
+from scapy import VERSION
 from zeroconf import ServiceBrowser, Zeroconf
 import socket
+import tempfile
+import os
+import datetime
+import pathlib
+import shutil
+
 
 # pip install winwifi   (https://pypi.org/project/winwifi/)
 # 有个bug，带有密码的wifi连接失败，修改Lib\site-packages\winwifi
@@ -41,6 +47,7 @@ def scanWifi():
 
 
 def arp_scan(ip):
+    import scapy.all as scapy
     answer, uanswer = scapy.srp(scapy.Ether(dst="ff:ff:ff:ff:ff:ff") / scapy.ARP(pdst=ip), inter=0.1, timeout=2, verbose=False)
     mac_list = []
     for send, recv in answer:
@@ -50,6 +57,7 @@ def arp_scan(ip):
 
 
 def scanAllIps(target_ip):
+    import scapy.all as scapy
     '''
     扫描局域网内所有的IP设备
     '''
@@ -90,7 +98,7 @@ class MymDNSListener:
     def add_service(self, zeroconf, type, name):
         info = zeroconf.get_service_info(type, name)
         address = socket.inet_ntoa(info.addresses[0])
-        device = {name.split('.')[0]: address}
+        device = {"name": name.split('.')[0], "ip": address}
         self.devices.append(device)
         # print("Service %s added, service info: %s" % (name, info))
 
@@ -104,7 +112,11 @@ def getOnlineDevices():
     browser = ServiceBrowser(zeroconf, "_arduino._tcp.local.", listener)
     time.sleep(1)
     zeroconf.close()
+    for device in listener.devices:
+        devicetype = autoTryCommit("http://" + device["ip"] + "/devicetype", "", 5)
+        device["devicetype"] = devicetype.text
     return listener.devices
+
 
 def getOfflineDevices():
     '''
@@ -116,6 +128,7 @@ def getOfflineDevices():
     result = [row for row in result if row[0].startswith("MySmart-") or row[0].startswith("MySonoff-")]
     return result
 
+
 def autoTryCommit(url, pload, times):
     for i in range(times):
         try:
@@ -125,11 +138,37 @@ def autoTryCommit(url, pload, times):
             continue
     raise("多次尝试失败")
 
+
+def autoTryConnectWifi(sid, times, passwd=''):
+    '''尝试多次连接wifi'''
+    for i in range(times):
+        try:
+            subprocess.check_output(["wifi", "connect", sid, passwd])
+            return
+        except Exception as ex:
+            print("try.. again")
+            continue
+    raise("多次尝试失败")
+
+
 def chooseDevices(list):
     '''
     命令行挑选设备
     '''
-    pass
+    for i in range(len(list)):
+        if len(list[i]) == 2:  # 离线设备
+            print("[%d] %s(%d)" % (i, list[i][0], list[i][1]))
+        else:  # 在线设备
+            print("[%d]" % i, list[i])
+
+    print("扫描到以上设备，请选择编号继续[0]：", end="")
+    choose = input()
+    choose = choose if choose != '' else '0'
+    if choose not in [str(i) for i in range(len(list))]:
+        print("输入序号不正确")
+        exit(0)
+    return int(choose)
+
 
 def DoSetNewDev(wifisid, wifipassword, mqttIP):
     '''
@@ -137,15 +176,9 @@ def DoSetNewDev(wifisid, wifipassword, mqttIP):
     '''
     # 获取未消配置的设备
     result = getOfflineDevices()
+    index = chooseDevices(result)
 
-    for i in range(len(result)):
-        print("[%d] %s(%d)" % (i, result[i][0], result[i][1]))
-    print("扫描到以上设备，请选择编号继续[0]：",end="")
-    choose = input()
-    if choose == "-1":
-        exit(0)
-
-    sid = result[int(choose)][0]
+    sid = result[index][0]
     print("准备处理设备：%s" % sid)
 
     currentWifi = getCurrentConnect()
@@ -157,7 +190,7 @@ def DoSetNewDev(wifisid, wifipassword, mqttIP):
     # 切换到设备的wifi
     print("准备切换wifi设备")
     subprocess.check_output(["wifi", "forget", sid])
-    subprocess.check_output(["wifi", "connect", sid, "12345678"])
+    autoTryConnectWifi(sid, 5, '12345678')
 
     # 读取设备相关信息
     print("获取设备相关信息……")
@@ -176,26 +209,146 @@ def DoSetNewDev(wifisid, wifipassword, mqttIP):
     print("设置完成")
 
     print("连接回至:%s……" % currentWifi)
-    subprocess.check_output(["wifi", "connect", currentWifi])
+    autoTryConnectWifi(currentWifi, 5)
     print("切回成功")
     subprocess.check_output(["wifi", "forget", sid])
 
     # 扫描网段中所有IP
-    print("扫描网段中所有IP")
+    print("扫描网段中所有设备")
     while True:
         allips2 = getOnlineDevices()
         for i in devices:
             if i in allips2:
                 allips2.remove(i)
-        # print(allips2)
         if len(allips2) > 0:
             break
-    newip = allips2[0][devicename]
+    newindex = 0
+    for i in range(len(allips2)):
+        if allips2[i]["name"] == devicename:
+            newindex = i
+            break
+
+    newip = allips2[newindex]["ip"]
     devicename2 = requests.get('http://'+newip+'/name').text
-    print(devicename2)
 
     print("---------finish-----------------")
-    print("新设备IP：%s，设备名：%s，设备类型：%s，固件版本：%s" % (allips2[0], devicename, devicetype, version))
+    print("新上线设备信息：", devicename2)
+    print("新设备IP：%s，设备名：%s，设备类型：%s，固件版本：%s" % (newip, devicename, devicetype, version))
+
+
+def InitDevice():
+    # 获取未消配置的设备
+    result = getOnlineDevices()
+    index = chooseDevices(result)
+
+    device = result[index]
+    print("准备处理设备：%s" % device["name"])
+    autoTryCommit('http://' + device["ip"] + '/cleareeprom', '', 5)
+    print("清除成功!")
+
+
+def UpdataFirm():
+    '''更新线上设备固件'''
+    devices = getOnlineDevices()
+    index = chooseDevices(devices)
+    device = devices[index]
+    devName = device["name"]
+    print("\r\n准备处理设备：%s" % devName, end="")
+    devicetype = autoTryCommit("http://" + device["ip"] + "/devicetype", "", 5).text
+    version = autoTryCommit("http://" + device["ip"] + "/version", "", 5).text
+    newver = "1.0"
+    print("设备类型：%s，当前版本：%s，当前固件版本：%s" % (devicetype, version, newver))
+    print("\r\n确认是否要升级?(Y/N)", end="")
+    choose = input()
+    if choose != "Y":
+        print("未选择升级，结束")
+        return
+
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    binfilelst = []
+    for path in os.listdir(dir_path + "\\bins"):
+        if not path.endswith("ino.bin"):
+            continue
+        dt = [path]
+        dt.append(path.split('_')[0])
+        v = path.split('_')[1].replace('.ino.bin', '').replace('v', '').strip()
+        dt.append(v)
+        fname = pathlib.Path(dir_path + "/bins/" + path)
+        dt.append(datetime.datetime.fromtimestamp(fname.stat().st_ctime))
+        binfilelst.append(dt)
+
+    print("\r\n确定类型?(%s)" % devicetype, end="")
+    choose = input()
+    devicetype = choose if choose != "" else devicetype
+    print("准备写入类型：%s" % devicetype)
+    binlst = [i for i in binfilelst if i[1] == devicetype]
+    if len(binlst) == 0:
+        print("未找到相应类型的bin，结束")
+        return
+
+    binlst.sort(key=lambda x: x[2], reverse=True)
+    print("查到版本有：")
+    for i in range(len(binlst)):
+        print("[%d] %s,构建时间:%s" % (i, binlst[i][0],binlst[i][3]))
+    print("选择版本[0]:", end="")
+    index = input()
+    index = 0 if index == "" else int(index)
+    chooseName = binlst[index][0]
+
+    print("选择bin文件为%s,准备写入" % chooseName)
+
+    toolPath = "C:\\Users\\zjf\\AppData\\Local\\Arduino15\\packages\\esp8266\\hardware\\esp8266\\3.0.2\\tools\\espota.py"
+    binpath = dir_path + "/bins/" + chooseName#E:\\3.杂代码\\智能家居\\MySmartHome\\bins\\commonlib.ino.bin"
+    subprocess.check_output(["python", toolPath, "-i", device["ip"], "-p", "8266", "--auth=", "-f", binpath])
+    print("升级成功，等待设备上线")
+    newdevinfo = []
+    while True:
+        devices = getOnlineDevices()
+        ret = [i for i in devices if i["name"] == devName]
+        if len(ret) > 0:
+            newdevinfo = ret[0]
+            break
+    print("设备已上线：", newdevinfo)
+    version = autoTryCommit("http://" + newdevinfo["ip"] + "/version", "", 5).text
+    print("固件版本：%s" % version)
+
+
+def ScanBin():
+    '''扫描新生成的bin，复制到bins文件夹内'''
+    tmpdir = tempfile.gettempdir()
+    binfilelst = []
+    for path in os.listdir(tmpdir):
+        if path.startswith("arduino_build_"):
+            dt = []
+            dt.append(path)
+            fname = pathlib.Path(tmpdir + "/" + path)
+            dt.append(datetime.datetime.fromtimestamp(fname.stat().st_mtime))
+            binlst = [i for i in os.listdir(tmpdir + "/" + path) if i.endswith(".bin")]
+            if len(binlst) == 0:
+                continue
+            dt.append(binlst[0])
+            dt.append(tmpdir + "/" + path + "/" + binlst[0])
+            binfilelst.append(dt)
+    binfilelst.sort(key=lambda x: x[1], reverse=True)
+    lastbinfile = binfilelst[0][3]
+    filename = lastbinfile.split('/')[-1]
+    projectName = filename[:-8]
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    srcfile = dir_path + "/" + projectName + "/" + projectName + ".ino"
+    ver = ""
+    devname = ""
+    for row in pathlib.Path(srcfile).read_text(encoding="utf-8").split('\n'):
+        if row.startswith("String firmversion"):
+            ver = row[len("String firmversion"):].strip()
+            ver = ver.replace("=", "").replace(";", "").replace("\"", "").strip()
+        if row.startswith("String DEVICE"):
+            devname = row[len("String DEVICE"):].strip()
+            devname = devname.replace("=", "").replace(";", "").replace("\"", "").strip()
+
+    print("获取版本：%s，设备名：%s" % (ver, devname))
+    destfile = dir_path + "/bins/" + devname + "_v" + ver + ".ino.bin"
+    shutil.copyfile(lastbinfile, destfile)
+    print(lastbinfile)
 
 
 if __name__ == '__main__':
@@ -204,23 +357,40 @@ if __name__ == '__main__':
     print("[1] 配置设备")
     print("[2] 初使化设备")
     print("[3] 更新设备固件")
-    print("请选择执行命令：",end="")
+    print("[4] 复制新生成固件")
+    print("请选择执行命令[0]：", end="")
     index = input()
-    
-    if index not in ["0","1","2","3"]:
+    index = index if index != '' else '0'
+
+    if index not in ["0", "1", "2", "3", "4"]:
         print("输入命令不正确")
         exit(0)
-    
-    if index =="0":
-        #mDNS扫描设备
+
+    if index == "0":
+        # mDNS扫描设备
         devices = getOnlineDevices()
-        print(devices)
-        #IP扫描
+        print("\r\n在线设备：", len(devices))
+        for dev in devices:
+            print(dev)
+        devices = getOfflineDevices()
+        print("\r\n离线设备：", len(devices))
+        for dev in devices:
+            print(dev)
+
+        # IP扫描
         # dt = arp_scan("192.168.3.1/24")
         # for i in dt:
         #     print(i[0])
 
-    elif index =="1":
+    elif index == "1":
         # DoSetNewDev('qinhh','58766730','192.168.3.168')
         DoSetNewDev('Epoint_Tech', 'epointtech', '')
+    elif index == "2":
+        InitDevice()
+    elif index == "3":
+        UpdataFirm()
+    elif index == "4":
+        ScanBin()
 
+    print("\r\n按任意键结束……")
+    input()

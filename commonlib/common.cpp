@@ -43,7 +43,7 @@ int StartInit(){
 }
 
 
-int writeCusVal(int pos,int val){
+void writeCusVal(int pos,int val){
   EEPROM.write(226 + pos, val);
   EEPROM.commit();
 }

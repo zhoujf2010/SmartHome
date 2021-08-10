@@ -9,6 +9,6 @@ void StartFinish();
 void clearroom();
 
 
-int writeCusVal(int pos,int val); //序号从1开始
+void writeCusVal(int pos,int val); //序号从1开始
 
 int readCusVal(int pos);

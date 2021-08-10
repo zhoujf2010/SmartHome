@@ -2,10 +2,13 @@
 #include "src/commonlib/wifimanage.h"
 #include "src/commonlib/otatool.h"
 #include "src/commonlib/common.h"
+#include <EEPROM.h>
 
+
+String firmversion =    "2.0";
 
 //易微联设备
-String DEVICE    =      "sonoff";
+String DEVICE    =      "switch";
 #define BUTTON          0
 #define RELAY           12
 #define RELAY1           5
@@ -53,6 +56,8 @@ void setup()
 {
   Serial.begin(115200);
   Serial.println("start......");
+  setVersion(firmversion);
+  setdevicetype(DEVICE);
 
   int ch = StartInit();
   Serial.print("ReadResetTimes:");
@@ -70,7 +75,7 @@ void setup()
   pinMode(BUTTON, INPUT);
   pinMode(BUTTON1, INPUT);
   pinMode(BUTTON2, INPUT);
-  
+
   pinMode(LED, OUTPUT);
   pinMode(RELAY, OUTPUT);
   pinMode(RELAY1, OUTPUT);
@@ -104,14 +109,10 @@ void blink() {
   digitalWrite(LED, !digitalRead(LED));
 }
 
+unsigned long lastPress;
+int presstimes = 0;
 //按钮处理
 void button() {
-  Serial.print("dt1->");
-  Serial.print(digitalRead(BUTTON)?"1":"0");
-  Serial.print(digitalRead(BUTTON1)?"  1":"  0");
-  Serial.print(digitalRead(BUTTON2)?"  1":"  0");
-  Serial.println("");
-  
   if (!digitalRead(BUTTON)) {
     count++;
     if (count > 100) {//长按5秒
@@ -123,13 +124,19 @@ void button() {
       digitalWrite(LED, LEDOFF); //有操作后，状态灯就关闭
       digitalWrite(RELAY, !digitalRead(RELAY));
       sendStatus = true;
+
+      presstimes ++; //记录3秒内连接压
+      if ((millis() > lastPress + (3000)) || (millis() < lastPress)) {
+        lastPress = millis();
+        presstimes = 0;
+      }
+      if (presstimes >= 5) {
+        Serial.println("\n\nSonoff Rebooting . . . . . . . . Please Wait");
+        clearroom();
+        blinkLED(LED, 400, 4);
+        ESP.restart();
+      }
     }
-//    else if (count > 100) {
-//      Serial.println("\n\nSonoff Rebooting . . . . . . . . Please Wait");
-//      clearroom();
-//      blinkLED(LED, 400, 4);
-//      ESP.restart();
-//    }
     count = 0;
   }
 
@@ -167,28 +174,28 @@ void callback(String payload_string) {
   else if (payload_string == "on") {
     digitalWrite(LED, LEDOFF); //有操作后，状态灯就关闭
     digitalWrite(RELAY, HIGH);
-      writeCusVal(0,1);
+    writeCusVal(0, 1);
   }
   else if (payload_string == "off") {
     digitalWrite(LED, LEDOFF); //有操作后，状态灯就关闭
     digitalWrite(RELAY, LOW);
-      writeCusVal(0,0);
+    writeCusVal(0, 0);
   }
   else if (payload_string == "on1") {
     digitalWrite(RELAY1, HIGH);
-      writeCusVal(1,1);
+    writeCusVal(1, 1);
   }
   else if (payload_string == "off1") {
     digitalWrite(RELAY1, LOW);
-      writeCusVal(1,0);
+    writeCusVal(1, 0);
   }
   else if (payload_string == "on2") {
     digitalWrite(RELAY2, HIGH);
-      writeCusVal(2,1);
+    writeCusVal(2, 1);
   }
   else if (payload_string == "off2") {
     digitalWrite(RELAY2, LOW);
-      writeCusVal(2,0);
+    writeCusVal(2, 0);
   }
   else if (payload_string == "reset") {
     blinkLED(LED, 400, 4);
@@ -196,6 +203,7 @@ void callback(String payload_string) {
   }
   sendStatus = true;
 }
+
 
 void loop() {
   if (loopOTA())
@@ -206,11 +214,12 @@ void loop() {
     if (digitalRead(RELAY) == HIGH)  {
       sendmqtt("/stat", "on");
       Serial.println("Relay . . . . . . . . . . . . . . . . . . ON");
-      writeCusVal(0,1);
+      writeCusVal(0, 1);
+
     } else {
       sendmqtt("/stat", "off");
       Serial.println("Relay . . . . . . . . . . . . . . . . . . OFF");
-      writeCusVal(0,0);
+      writeCusVal(0, 0);
     }
     sendStatus = false;
   }
@@ -218,11 +227,11 @@ void loop() {
     if (digitalRead(RELAY1) == HIGH)  {
       sendmqtt("/stat", "on1");
       Serial.println("Relay . . . . . . . . . . . . . . . . . . ON1");
-      writeCusVal(1,1);
+      writeCusVal(1, 1);
     } else {
       sendmqtt("/stat", "off1");
       Serial.println("Relay . . . . . . . . . . . . . . . . . . OFF1");
-      writeCusVal(1,0);
+      writeCusVal(1, 0);
     }
     sendStatus1 = false;
   }
@@ -230,11 +239,11 @@ void loop() {
     if (digitalRead(RELAY2) == HIGH)  {
       sendmqtt("/stat", "on2");
       Serial.println("Relay . . . . . . . . . . . . . . . . . . ON2");
-      writeCusVal(2,1);
+      writeCusVal(2, 1);
     } else {
       sendmqtt("/stat", "off2");
       Serial.println("Relay . . . . . . . . . . . . . . . . . . OFF2");
-      writeCusVal(2,0);
+      writeCusVal(2, 0);
     }
     sendStatus2 = false;
   }
