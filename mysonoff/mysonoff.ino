@@ -5,38 +5,19 @@
 #include <EEPROM.h>
 
 
-String firmversion =    "2.0";
 
 //易微联设备
-String DEVICE    =      "switch";
+String firmversion =    "2.0";
+String DEVICE      =    "switch";
 #define BUTTON          0
+#define BUTTON1         9
+#define BUTTON2         10
 #define RELAY           12
-#define RELAY1           5
-#define RELAY2           4
-
-#define BUTTON1          9
-#define BUTTON2          10
-
+#define RELAY1          5
+#define RELAY2          4
 #define LED             13
 #define LEDON           LOW
 #define LEDOFF          HIGH
-
-
-//// 欧瑞博设备
-//String DEVICE    =      "orvibo";
-//#define BUTTON          14
-//#define RELAY           5
-//#define LED             12
-//#define LEDON           HIGH
-//#define LEDOFF          LOW
-
-////8266测试芯片
-//String DEVICE    =      "8266";
-//#define BUTTON          0
-//#define RELAY           2 //暂时引脚，随便放个
-//#define LED             2
-//#define LEDON           HIGH
-//#define LEDOFF          LOW
 
 
 Ticker btn_timer;

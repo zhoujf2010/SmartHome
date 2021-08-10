@@ -202,7 +202,7 @@ def DoSetNewDev(wifisid, wifipassword, mqttIP):
 
     print("准备设置设备信息")
     # 设置SID 密码
-    pload = {'id': sid, 'newssid': wifisid, 'newpass': wifipassword, 'mqttIP': mqttIP}
+    pload = {'id': '', 'newssid': wifisid, 'newpass': wifipassword, 'mqttIP': mqttIP}
     autoTryCommit('http://192.168.4.1/APsubmit', pload, 5)
     # 重启
     autoTryCommit('http://192.168.4.1/esprestart', pload, 5)
@@ -354,15 +354,16 @@ def ScanBin():
 if __name__ == '__main__':
     print("功能：")
     print("[0] 扫描设备")
-    print("[1] 配置设备")
-    print("[2] 初使化设备")
-    print("[3] 更新设备固件")
-    print("[4] 复制新生成固件")
+    print("[1] 扫描网络IP")
+    print("[2] 配置设备")
+    print("[3] 初使化设备")
+    print("[4] 更新设备固件")
+    print("[5] 复制新生成固件")
     print("请选择执行命令[0]：", end="")
     index = input()
     index = index if index != '' else '0'
 
-    if index not in ["0", "1", "2", "3", "4"]:
+    if index not in ["0", "1", "2", "3", "4", "5"]:
         print("输入命令不正确")
         exit(0)
 
@@ -376,20 +377,20 @@ if __name__ == '__main__':
         print("\r\n离线设备：", len(devices))
         for dev in devices:
             print(dev)
-
+    elif index == "1":
         # IP扫描
         # dt = arp_scan("192.168.3.1/24")
-        # for i in dt:
-        #     print(i[0])
-
-    elif index == "1":
-        # DoSetNewDev('qinhh','58766730','192.168.3.168')
-        DoSetNewDev('Epoint_Tech', 'epointtech', '')
+        dt = scanAllIps("192.168.3.1/24")
+        for i in dt:
+            print(i)
     elif index == "2":
-        InitDevice()
+        DoSetNewDev('qinhh','58766730','192.168.3.168')
+        # DoSetNewDev('Epoint_Tech', 'epointtech', '')
     elif index == "3":
-        UpdataFirm()
+        InitDevice()
     elif index == "4":
+        UpdataFirm()
+    elif index == "5":
         ScanBin()
 
     print("\r\n按任意键结束……")

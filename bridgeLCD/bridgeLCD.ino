@@ -11,6 +11,7 @@
 WiFiServer sockertserver(81);//你要的端口号，随意修改，范围0-65535
 WiFiClient serverClient;
 
+String firmversion =    "2.0";
 String DEVICE    =      "bridgeLCD";
 #define LED            2
 #define LEDON           LOW
@@ -29,6 +30,8 @@ Ticker led_timer;
 void setup() {
   Serial.begin(115200);
   Serial.println("start......");
+  setVersion(firmversion);
+  setdevicetype(DEVICE);
 
   //初始化软串口通信；
   softSerial1.begin(115200);
