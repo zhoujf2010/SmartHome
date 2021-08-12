@@ -257,7 +257,7 @@ def UpdataFirm():
     devicetype = autoTryCommit("http://" + device["ip"] + "/devicetype", "", 5).text
     version = autoTryCommit("http://" + device["ip"] + "/version", "", 5).text
     newver = "1.0"
-    print("设备类型：%s，当前版本：%s，当前固件版本：%s" % (devicetype, version, newver))
+    print("设备类型：%s，当前版本：%s" % (devicetype, version))
     print("\r\n确认是否要升级?(Y/N)", end="")
     choose = input()
     if choose != "Y":

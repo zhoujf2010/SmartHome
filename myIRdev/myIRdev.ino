@@ -10,7 +10,8 @@
 
 //红外线遥控器
 
-String DEVICE    =      "myirdev";
+String firmversion =    "2.0";
+String DEVICE    =      "irdev";
 #define LED            13
 #define LED2            12
 #define SENDPIN         14
@@ -36,7 +37,9 @@ void setup()
 {
   Serial.begin(115200);
   Serial.println("start......");
-  
+  setVersion(firmversion);
+  setdevicetype(DEVICE);
+    
   int ch = StartInit();
   Serial.print("ReadResetTimes:");
   Serial.println(ch);

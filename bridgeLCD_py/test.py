@@ -6,7 +6,7 @@ import time
 # url = 'home/mydht11/MySonoff-e7236f' #温度
 # url = "home/myirdev/myIR1"
 url ="home/sonoff/MySonoff-8ed41d"
-# url ="#"
+url ="#"
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code "+str(rc))
@@ -14,10 +14,10 @@ def on_connect(client, userdata, flags, rc):
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
     client.subscribe(url)
-    client.subscribe(url + "/stat")
-    client.subscribe(url + "/ip")
-    client.subscribe(url + "/Temperature")
-    client.subscribe(url + "/Humidity")
+    # client.subscribe(url + "/stat")
+    # client.subscribe(url + "/ip")
+    # client.subscribe(url + "/Temperature")
+    # client.subscribe(url + "/Humidity")
 
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
@@ -25,7 +25,7 @@ def on_message(client, userdata, msg):
 
 
 print("---")
-client =mqtt.Client("testasfd")
+client =mqtt.Client("testasfdxx")
 client.on_connect = on_connect
 client.on_message = on_message
 client.connect("192.168.3.168")
@@ -33,7 +33,7 @@ print("22")
 
 time.sleep(3)
 # client.publish("home/myirdev/MySonoff-f15525","29,0xD5F2A,24")
-client.publish(url,"12")
+# client.publish(url,"12")
 print("33")
 # client.publish(url,"ip")
 
@@ -45,7 +45,7 @@ print("33")
 
 # time.sleep(5)
 
-# client.loop_forever()
+client.loop_forever()
 
 
 client.disconnect()

@@ -7,7 +7,7 @@
 
 
 //易微联设备
-String firmversion =    "2.0";
+String firmversion =    "2.1";
 String DEVICE      =    "switch";
 #define BUTTON          0
 #define BUTTON1         9
@@ -47,11 +47,6 @@ void setup()
     StartError();
   }
 
-  if (DEVICE == "orvibo")  {
-    pinMode(4, OUTPUT);
-    digitalWrite(4, LOW); //需把绿灯关了，否则红灯也不亮
-  }
-
   //设置IO口模式
   pinMode(BUTTON, INPUT);
   pinMode(BUTTON1, INPUT);
@@ -63,11 +58,20 @@ void setup()
   pinMode(RELAY2, OUTPUT);
   digitalWrite(LED, LEDOFF);
 
+  delay(10);
+  Serial.println("ready set");
+  
   //恢复上次开关状态
   digitalWrite(RELAY, readCusVal(0) == 1 ? HIGH : LOW);
-  digitalWrite(RELAY1, readCusVal(1) == 1 ? HIGH : LOW);
-  digitalWrite(RELAY2, readCusVal(2) == 1 ? HIGH : LOW);
+  Serial.println(readCusVal(0));
 
+  digitalWrite(RELAY1, readCusVal(1) == 1 ? HIGH : LOW);
+  Serial.println(readCusVal(1));
+  digitalWrite(RELAY2, readCusVal(2) == 1 ? HIGH : LOW);
+  Serial.println(readCusVal(2));
+  Serial.println("finish set");
+  delay(2000); //需要延时2秒，三路的不然会影响按健
+  Serial.println("go");
   btn_timer.attach(0.05, button);
   led_timer.attach(0.5, blink);
 
@@ -156,33 +160,38 @@ void callback(String payload_string) {
     digitalWrite(LED, LEDOFF); //有操作后，状态灯就关闭
     digitalWrite(RELAY, HIGH);
     writeCusVal(0, 1);
+    sendStatus = true;
   }
   else if (payload_string == "off") {
     digitalWrite(LED, LEDOFF); //有操作后，状态灯就关闭
     digitalWrite(RELAY, LOW);
     writeCusVal(0, 0);
+    sendStatus = true;
   }
   else if (payload_string == "on1") {
     digitalWrite(RELAY1, HIGH);
     writeCusVal(1, 1);
+    sendStatus1 = true;
   }
   else if (payload_string == "off1") {
     digitalWrite(RELAY1, LOW);
     writeCusVal(1, 0);
+    sendStatus1 = true;
   }
   else if (payload_string == "on2") {
     digitalWrite(RELAY2, HIGH);
     writeCusVal(2, 1);
+    sendStatus2 = true;
   }
   else if (payload_string == "off2") {
     digitalWrite(RELAY2, LOW);
     writeCusVal(2, 0);
+    sendStatus2 = true;
   }
   else if (payload_string == "reset") {
     blinkLED(LED, 400, 4);
     ESP.restart();
   }
-  sendStatus = true;
 }
 
 

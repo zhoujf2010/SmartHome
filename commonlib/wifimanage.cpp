@@ -348,12 +348,19 @@ bool hasmqtt = false;
 
 String _MQTT_TOPIC = "";
 std::function<void(String str)> _callback;
-
+bool firstconnect = false;
 
 void innercallback(char* topic, byte* payload, unsigned int length) {
   String payload_string = "";
   for (int i = 0; i < length; ++i)
     payload_string += char(payload[i]);
+    
+  if (firstconnect){ //抛弃首次数据
+    firstconnect = false;
+    
+  Serial.println("del:" + payload_string);
+    return ;
+  }
   _callback(payload_string);
 }
 
@@ -365,6 +372,7 @@ void initMQTT(String MQTT_TOPIC, std::function<void(String str)> callback) {
     strcpy(c, readmqttip().c_str());
     mqttClient.setServer(c, 1883);
     mqttClient.setCallback(innercallback);
+    firstconnect = true;
     connectMQTT();
     hasmqtt = true;
   }
