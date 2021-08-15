@@ -34,6 +34,7 @@ class SockClient():
         self.connected = False
 
         self.error_cnt = 0
+        self.page0_sel = 0
 
     def start(self):
         x = threading.Thread(target=self.DoReceive)
@@ -110,14 +111,14 @@ class SockClient():
                 obj = {}
                 obj["type"] = "page0_init"
                 obj["data"] = ["测试灯", "主灯", "筒灯","饭厅灯","电视灯"]#, "房间2","走廊灯","阳台灯"]
-                obj["listSel"] = 1
+                obj["listSel"] = self.page0_sel
                 return json.dumps(obj)
         elif tp == "page0":
             if dt["index"] == 0:
                 if dt["value"] == 1:
-                    self.sendMqtt("on")
+                    self.sendMqtt("home/switch/MySmart-8ed41d","on")
                 elif dt["value"] == 0:
-                    self.sendMqtt("off")
+                    self.sendMqtt("home/switch/MySmart-8ed41d","off")
 
         return ""
 
@@ -127,44 +128,50 @@ class SockClient():
         self.client.on_message = self.onMqttmsg
         self.client.connect("192.168.3.168")
 
-    def sendMqtt(self, msg):
-        self.client.publish(self.url, msg)
+    def sendMqtt(self, url, msg):
+        self.client.publish(url, msg)
 
     def onMqttmsg(self, client, userdata, msg):
         switch = str(msg.payload.decode("utf-8"))
         logger.info('receive from mqtt=>' + msg.topic+" " + switch)
-        obj = {}
-        obj["type"] = "page0"
-        obj["index"] = 0
-        if switch == "on":
-            obj["value"] = 1
-        elif switch == "off":
-            obj["value"] = 0
 
-        self.sendcmd(json.dumps(obj))
+        if msg.topic =="home/switch/MySmart-8ed41d/stat":
+            obj = {}
+            obj["type"] = "page0"
+            obj["index"] = 0
+            if switch == "on":
+                obj["value"] = 1
+                self.page0_sel = self.page0_sel | 0x01
+            elif switch == "off":
+                obj["value"] = 0
+                self.page0_sel = self.page0_sel & ~0x01
+
+            self.sendcmd(json.dumps(obj))
 
     def onMqttConnect(self, client, userdata, flags, rc):
         logger.info("MQTT Connected with result code "+str(rc))
 
         # Subscribing in on_connect() means that if we lose the connection and
-        # reconnect then subscriptions will be renewed.
-        client.subscribe(self.url + "/stat")
-        client.subscribe(self.url + "/ip")
-        client.subscribe(self.url + "/Temperature")
-        client.subscribe(self.url + "/Humidity")
+        # reconnect then subscriptions will be renewed.v
+        client.subscribe(self.url)
+        # client.subscribe(self.url + "/stat")
+        # client.subscribe(self.url + "/stat")
+        # client.subscribe(self.url + "/ip")
+        # client.subscribe(self.url + "/Temperature")
+        # client.subscribe(self.url + "/Humidity")
 
 
 
 if __name__ == '__main__':
     # create logger with 'spam_application'
     logger = logging.getLogger('bridgeLCD')
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
     # create file handler which logs even debug messages
     fh = logging.FileHandler('log.log')
-    fh.setLevel(logging.DEBUG)
+    fh.setLevel(logging.INFO)
     # create console handler with a higher log level
     ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
+    ch.setLevel(logging.INFO)
     # create formatter and add it to the handlers
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     fh.setFormatter(formatter)
@@ -182,7 +189,7 @@ if __name__ == '__main__':
     # url = 'home/myhcsr/MySonoff-e37fff' #人体感应
     # url = 'home/mydht11/MySonoff-e7236f' #温度
     url = "home/sonoff/MySonoff-d5fa66"  # LED
-    s.url = url
+    s.url = "#"
 
     s.connectMqtt("")
     # client =mqtt.Client("test")

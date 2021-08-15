@@ -99,10 +99,10 @@ const int32_t kMaxPauseMs = 10000;  // 10 Seconds.
 bool lastSendSucceeded = false;  // Store the success status of the last send.
 
 void callback(String payload_string) {
-  if (isfirstconnMQTT)  { //跳过首次收到的信息
-    isfirstconnMQTT = false;
-    return ;
-  }
+//  if (isfirstconnMQTT)  { //跳过首次收到的信息
+//    isfirstconnMQTT = false;
+//    return ;
+//  }
 
   Serial.print("receive:" + payload_string + "   ");
   //  uint64_t number = getUInt64fromHex(payload_string.c_str());

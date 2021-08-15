@@ -10,3 +10,5 @@
 /mylightsensor/src/commonlib
 /mysonoff/src/commonlib
 /orviboplug/src/commonlib
+/bridgeLCD_py/*.cfg
+/bridgeLCD_py/*.log

@@ -7,19 +7,19 @@
 #include "common.h"
 #include <PubSubClient.h>
 
-String CurrentVersion ="1.0";
-String devicetype ="";
+String CurrentVersion = "1.0";
+String devicetype = "";
 int connectType = 0;
 
 ESP8266WebServer server(80);
 String readesid();
 String printEncryptionType(int thisType);
 
-void setVersion(String version){
+void setVersion(String version) {
   CurrentVersion = version;
 }
 
-void setdevicetype(String type){
+void setdevicetype(String type) {
   devicetype = type;
 }
 
@@ -261,13 +261,13 @@ String readesid() {
 }
 
 String getIP() {
-  if (connectType ==1) { //连接wifi
+  if (connectType == 1) { //连接wifi
     return WiFi.localIP().toString();
   }
-  else if (connectType ==2) { //启动热点
+  else if (connectType == 2) { //启动热点
     return WiFi.softAPIP().toString();
   }
-	return "";
+  return "";
 }
 
 //0-32 SID
@@ -354,11 +354,10 @@ void innercallback(char* topic, byte* payload, unsigned int length) {
   String payload_string = "";
   for (int i = 0; i < length; ++i)
     payload_string += char(payload[i]);
-    
-  if (firstconnect){ //抛弃首次数据
+
+  if (firstconnect) { //抛弃首次数据
     firstconnect = false;
-    
-  Serial.println("del:" + payload_string);
+    Serial.println("del:" + payload_string);
     return ;
   }
   _callback(payload_string);
@@ -372,7 +371,6 @@ void initMQTT(String MQTT_TOPIC, std::function<void(String str)> callback) {
     strcpy(c, readmqttip().c_str());
     mqttClient.setServer(c, 1883);
     mqttClient.setCallback(innercallback);
-    firstconnect = true;
     connectMQTT();
     hasmqtt = true;
   }
@@ -387,6 +385,7 @@ void connectMQTT() {
 
       mqttClient.subscribe(_MQTT_TOPIC.c_str());
       Serial.println("Topic:" + _MQTT_TOPIC);
+      firstconnect = true;
     } else {
       Serial.print("failed, rc=");
       Serial.print(mqttClient.state());
@@ -417,7 +416,7 @@ void timedTasks() {
 
 
 void checkConnection() {
-  if (connectType ==1) { //连接wifi
+  if (connectType == 1) { //连接wifi
     if (WiFi.status() != WL_CONNECTED) {
       Serial.println("WiFi.status() != WL_CONNECTED), Restarted wifi");
       //ESP.restart();

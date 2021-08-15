@@ -109,6 +109,7 @@ void button() {
       digitalWrite(LED, LEDOFF); //有操作后，状态灯就关闭
       digitalWrite(RELAY, !digitalRead(RELAY));
       sendStatus = true;
+      sendmqtt("/log", "press button");
 
       presstimes ++; //记录3秒内连接压
       if ((millis() > lastPress + (3000)) || (millis() < lastPress)) {
@@ -153,6 +154,7 @@ unsigned long checkLastTime;
 
 void callback(String payload_string) {
   Serial.println("receive:" + payload_string);
+  sendmqtt("/log", "receive mqtt: " + payload_string);
 
   if (payload_string == "stat") {
   }
