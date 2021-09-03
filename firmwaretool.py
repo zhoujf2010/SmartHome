@@ -195,7 +195,7 @@ def DoSetNewDev(wifisid, wifipassword, mqttIP):
     # 获取未消配置的设备
     result = getOfflineDevices()
     index = chooseDevices(result)
-    if index <= len(result):
+    if index >= len(result):
         return
 
     sid = result[index]["name"]
@@ -430,7 +430,7 @@ def scanDevice():
         print(hashdt[key])
     
     for item in notfound:
-        olddt[item["name"]] = olddt
+        olddt[item[0]] = item
     saveRecoredDevices(olddt)
     
 
