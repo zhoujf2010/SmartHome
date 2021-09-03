@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <link rel="icon" href="<%= BASE_URL %>favicon.ico">
+    <title><%= htmlWebpackPlugin.options.title %></title>
+    
+    <style>
+      body {
+        font-family: Roboto, sans-serif;
+        -moz-osx-font-smoothing: grayscale;
+        -webkit-font-smoothing: antialiased;
+        font-weight: 400;
+        margin: 0;
+        padding: 0;
+        height: 100%;
+      }
+      #ha-init-skeleton::before {
+        display: block;
+        content: "";
+        height: 56px;
+        background-color: #03A9F4;
+      }
+      html {
+        background-color: var(--primary-background-color);
+      }
+      @media (prefers-color-scheme: dark) {
+        html {
+          background-color: #111111;
+          color: #e1e1e1;
+        }
+        #ha-init-skeleton::before {
+          background-color: #1c1c1c;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="ha-init-skeleton"></div>
+    <demo-ctl/>
+    <!-- built files will be auto injected -->
+  </body>
+</html>

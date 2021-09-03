@@ -1,0 +1,5 @@
+/.vscode
+/server/webFrame/__pycache__
+/server/webpage
+/vue.config.js.baiduyun.uploading.cfg
+*.pyc

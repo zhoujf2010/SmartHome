@@ -1,0 +1,143 @@
+import { html, LitElement, TemplateResult } from "lit";
+import { customElement, property, query } from "lit/decorators";
+import { fireEvent } from "../fire_event";
+import "./paper-time-input";
+
+export interface HaTimeData {
+  hours?: number;
+  minutes?: number;
+  seconds?: number;
+  milliseconds?: number;
+}
+
+@customElement("ha-time-input")
+class HaTimeInput extends LitElement {
+  @property() public data!: HaTimeData;
+
+  @property() public label?: string;
+
+  @property() public suffix?: string;
+
+  @property({ type: Boolean }) public required?: boolean;
+
+  @property({ type: Boolean }) public enableMillisecond?: boolean;
+
+  @query("paper-time-input", true) private _input?: HTMLElement;
+
+  public focus() {
+    if (this._input) {
+      this._input.focus();
+    }
+  }
+
+  protected render(): TemplateResult {
+    return html`
+      <paper-time-input
+        .label=${this.label}
+        .required=${this.required}
+        .autoValidate=${this.required}
+        error-message="Required"
+        enable-second
+        .enableMillisecond=${this.enableMillisecond}
+        format="24"
+        .hour=${this._parseDuration(this._hours)}
+        .min=${this._parseDuration(this._minutes)}
+        .sec=${this._parseDuration(this._seconds)}
+        .millisec=${this._parseDurationMillisec(this._milliseconds)}
+        @hour-changed=${this._hourChanged}
+        @min-changed=${this._minChanged}
+        @sec-changed=${this._secChanged}
+        @millisec-changed=${this._millisecChanged}
+        float-input-labels
+        no-hours-limit
+        always-float-input-labels
+        hour-label="hh"
+        min-label="mm"
+        sec-label="ss"
+        millisec-label="ms"
+      ></paper-time-input>
+    `;
+  }
+
+  private get _hours() {
+    return this.data && this.data.hours ? Number(this.data.hours) : 0;
+  }
+
+  private get _minutes() {
+    return this.data && this.data.minutes ? Number(this.data.minutes) : 0;
+  }
+
+  private get _seconds() {
+    return this.data && this.data.seconds ? Number(this.data.seconds) : 0;
+  }
+
+  private get _milliseconds() {
+    return this.data && this.data.milliseconds
+      ? Number(this.data.milliseconds)
+      : 0;
+  }
+
+  private _parseDuration(value : Number) {
+    return value.toString().padStart(2, "0");
+  }
+
+  private _parseDurationMillisec(value : Number) {
+    return value.toString().padStart(3, "0");
+  }
+
+  private _hourChanged(ev :any ) {
+    this._durationChanged(ev, "hours");
+  }
+
+  private _minChanged(ev :any ) {
+    this._durationChanged(ev, "minutes");
+  }
+
+  private _secChanged(ev :any ) {
+    this._durationChanged(ev, "seconds");
+  }
+
+  private _millisecChanged(ev : Number) {
+    this._durationChanged(ev, "milliseconds");
+  }
+
+  private _durationChanged(ev :any , unit : String) {
+    let value = Number(ev.detail.value);
+
+    // @ts-ignore: Unreachable code error
+    if (value === this[`_${unit}`]) {
+      return;
+    }
+
+    let hours = this._hours;
+    let minutes = this._minutes;
+
+    if (unit === "seconds" && value > 59) {
+      minutes += Math.floor(value / 60);
+      value %= 60;
+    }
+
+    if (unit === "minutes" && value > 59) {
+      hours += Math.floor(value / 60);
+      value %= 60;
+    }
+
+    // @ts-ignore: Unreachable code error
+    fireEvent(this, "value-changed", {
+      value: {
+        hours,
+        minutes,
+        seconds: this._seconds,
+        milliseconds: this._milliseconds,
+        // @ts-ignore: Unreachable code error
+        ...{ [unit]: value },
+      },
+    });
+  }
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    "ha-time-input": HaTimeInput;
+  }
+}

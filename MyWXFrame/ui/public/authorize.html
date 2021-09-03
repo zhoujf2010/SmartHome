@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <link rel="icon" href="<%= BASE_URL %>favicon.ico">
+    <title><%= htmlWebpackPlugin.options.title %></title>
+
+<style>
+  body {
+    font-family: Roboto, sans-serif;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-font-smoothing: antialiased;
+    font-weight: 400;
+    margin: 0;
+    padding: 0;
+    height: 100%;
+  }
+</style>
+
+
+
+<style>
+  .content {
+    padding: 20px 16px;
+    max-width: 360px;
+    margin: 0 auto;
+  }
+
+  .header {
+    font-size: 1.96em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 300;
+  }
+
+  .header img {
+    margin-right: 16px;
+  }
+  @media (prefers-color-scheme: dark) {
+    html {
+      background-color: #111111;
+      color: #e1e1e1;
+    }
+  }
+</style>
+  </head>
+  <body>
+    <div class="content">
+      <div class="header">
+        <img src="/static/icons/favicon-192x192.png" height="52" />
+        Home Assistant
+      </div>
+      <ha-authorize><p>Initializing</p></ha-authorize>
+    </div>
+    <!-- built files will be auto injected -->
+  </body>
+</html>
