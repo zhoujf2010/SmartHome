@@ -14,6 +14,9 @@ import os
 import datetime
 import pathlib
 import shutil
+import pandas as pd 
+import numpy as np
+import json
 
 
 # pip install winwifi   (https://pypi.org/project/winwifi/)
@@ -115,7 +118,15 @@ def getOnlineDevices():
     for device in listener.devices:
         devicetype = autoTryCommit("http://" + device["ip"] + "/devicetype", "", 5)
         device["devicetype"] = devicetype.text
-    return listener.devices
+    ret = listener.devices
+    
+    #加载文件中保存的信息
+    data = loadRecordDevices()
+    for dev in ret:
+        if dev["name"] in data:
+            dev["note"] = data[dev["name"]][2]
+            data[dev["name"]][1] = dev["devicetype"]
+    return ret
 
 
 def getOfflineDevices():
@@ -125,7 +136,13 @@ def getOfflineDevices():
     # 扫描当前所有wifi信息
     result = scanWifi()
     # 筛选属于智能家居设备
-    result = [row for row in result if row[0].startswith("MySmart-") or row[0].startswith("MySonoff-")]
+    result = [{"name":row[0],"signal":row[1]} for row in result if row[0].startswith("MySmart-") or row[0].startswith("MySonoff-")]
+    #加载文件中保存的信息
+    hashdt = loadRecordDevices()
+    for dev in result:
+        if dev["name"] in hashdt:
+            dev["devicetype"] = hashdt[dev["name"]][1]
+            dev["note"] = hashdt[dev["name"]][2]
     return result
 
 
@@ -135,6 +152,7 @@ def autoTryCommit(url, pload, times):
             return requests.post(url, data=pload, timeout=5)
         except Exception as ex:
             print("try.. again")
+            time.sleep(2000)
             continue
     raise("多次尝试失败")
 
@@ -156,10 +174,10 @@ def chooseDevices(list):
     命令行挑选设备
     '''
     for i in range(len(list)):
-        if len(list[i]) == 2:  # 离线设备
-            print("[%d] %s(%d)" % (i, list[i][0], list[i][1]))
-        else:  # 在线设备
-            print("[%d]" % i, list[i])
+        # if len(list[i]) == 2:  # 离线设备
+        #     print("[%d] %s(%d)" % (i, list[i][0], list[i][1]))
+        # else:  # 在线设备
+        print("[%d]" % i, list[i])
 
     print("扫描到以上设备，请选择编号继续[0]：", end="")
     choose = input()
@@ -177,8 +195,10 @@ def DoSetNewDev(wifisid, wifipassword, mqttIP):
     # 获取未消配置的设备
     result = getOfflineDevices()
     index = chooseDevices(result)
+    if index <= len(result):
+        return
 
-    sid = result[index][0]
+    sid = result[index]["name"]
     print("准备处理设备：%s" % sid)
 
     currentWifi = getCurrentConnect()
@@ -234,6 +254,14 @@ def DoSetNewDev(wifisid, wifipassword, mqttIP):
     print("---------finish-----------------")
     print("新上线设备信息：", devicename2)
     print("新设备IP：%s，设备名：%s，设备类型：%s，固件版本：%s" % (newip, devicename, devicetype, version))
+
+    print("请输入设备用途：",end="")
+    note = input()
+    #加载文件中保存的信息
+    hashdt = loadRecordDevices()
+    hashdt[devicename2][1] = devicetype
+    hashdt[devicename2][2] = note
+    saveRecoredDevices(hashdt)
 
 
 def InitDevice():
@@ -351,47 +379,108 @@ def ScanBin():
     print(lastbinfile)
 
 
+def loadRecordDevices():#加载记录文件的设备信息
+    file ="./devices.csv"
+    if not os.path.exists(file):
+        np_data=[]
+        save = pd.DataFrame(np_data, columns = ['name', 'type', 'note']) 
+        save.to_csv(file,index=False,header=True)  #index=False,header=False表示不保存行索引和列标题
+
+    data = pd.read_csv(file, header=None,encoding="ansi")
+    data = list(data.values[1:])
+    
+    hashdt ={}
+    for item in data:
+        hashdt[item[0]] = item
+    return hashdt
+
+def saveRecoredDevices(hashdt):
+    data = []
+    for key in hashdt:
+        data.append(hashdt[key])
+
+    file ="./devices.csv"
+    save = pd.DataFrame(np.array(data), columns = ['name', 'type', 'note']) 
+    save.to_csv(file,index=False,header=True,encoding="ansi")  #index=False,header=False表示不保存行索引和列标题
+
+def scanDevice():
+    #加载文件中保存的信息
+    hashdt = loadRecordDevices()
+    olddt = hashdt.copy()
+    notfound = []
+    # mDNS扫描设备
+    devices1 = getOnlineDevices()
+    print("\r\n在线设备：", len(devices1))
+    for dev in devices1:
+        if dev["name"] in hashdt:
+            hashdt.pop(dev["name"])
+        else:
+            notfound.append([dev["name"],dev["devicetype"],"unknown"])
+        print(dev)
+    devices2 = getOfflineDevices()
+    print("\r\n离线设备：", len(devices2))
+    for dev in devices2:
+        if dev["name"] in hashdt:
+            hashdt.pop(dev["name"])
+        else:
+            notfound.append([dev["name"],"unknown","unknown"])
+        print(dev)
+    print("\r\n未扫描设备：", len(hashdt))
+    for key in hashdt:
+        print(hashdt[key])
+    
+    for item in notfound:
+        olddt[item["name"]] = olddt
+    saveRecoredDevices(olddt)
+    
+
 if __name__ == '__main__':
-    print("功能：")
-    print("[0] 扫描设备")
-    print("[1] 扫描网络IP")
-    print("[2] 配置设备")
-    print("[3] 初使化设备")
-    print("[4] 更新设备固件")
-    print("[5] 复制新生成固件")
-    print("请选择执行命令[0]：", end="")
-    index = input()
-    index = index if index != '' else '0'
+    while True:
+        print("功能：")
+        print("[0] 扫描设备")
+        print("[1] 扫描网络IP")
+        print("[2] 配置设备")
+        print("[3] 初使化设备")
+        print("[4] 更新设备固件")
+        print("[5] 复制新生成固件")
+        print("[6] 退出")
+        print("请选择执行命令[0]：", end="")
+        index = input()
+        index = index if index != '' else '0'
 
-    if index not in ["0", "1", "2", "3", "4", "5"]:
-        print("输入命令不正确")
-        exit(0)
+        if index not in ["0", "1", "2", "3", "4", "5","6"]:
+            print("输入命令不正确")
+            exit(0)
 
-    if index == "0":
-        # mDNS扫描设备
-        devices = getOnlineDevices()
-        print("\r\n在线设备：", len(devices))
-        for dev in devices:
-            print(dev)
-        devices = getOfflineDevices()
-        print("\r\n离线设备：", len(devices))
-        for dev in devices:
-            print(dev)
-    elif index == "1":
-        # IP扫描
-        # dt = arp_scan("192.168.3.1/24")
-        dt = scanAllIps("192.168.3.1/24")
-        for i in dt:
-            print(i)
-    elif index == "2":
-        DoSetNewDev('qinhh','58766730','192.168.3.168')
-        # DoSetNewDev('Epoint_Tech', 'epointtech', '')
-    elif index == "3":
-        InitDevice()
-    elif index == "4":
-        UpdataFirm()
-    elif index == "5":
-        ScanBin()
-
-    print("\r\n按任意键结束……")
-    input()
+        if index == "0":
+            scanDevice()
+        elif index == "1":
+            # IP扫描
+            # dt = arp_scan("192.168.3.1/24")
+            dt = scanAllIps("192.168.3.1/24")
+            for i in dt:
+                print(i)
+        elif index == "2":
+            tmpfile = tempfile.gettempdir()+"/firmwaretool.json"
+            data =""
+            if os.path.exists(tmpfile):
+                data = open(tmpfile).read()
+            print("请确认信息：\r\nSSID,password,mqttip")
+            print(data,end="")
+            ip = input()
+            if ip == "":
+                ip = data
+            open(tmpfile,"w").write(ip)
+            print("准备烧写信息："+ ip)
+            DoSetNewDev(ip.split(",")[0],ip.split(",")[1],ip.split(",")[2])
+        elif index == "3":
+            InitDevice()
+        elif index == "4":
+            UpdataFirm()
+        elif index == "5":
+            ScanBin()
+        elif index == "6":
+            break
+        print("\r\n----------------------------")
+        # print("\r\n按任意键结束……")
+        # input()

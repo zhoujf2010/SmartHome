@@ -12,3 +12,4 @@
 /orviboplug/src/commonlib
 /bridgeLCD_py/*.cfg
 /bridgeLCD_py/*.log
+/devices.csv
