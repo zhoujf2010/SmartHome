@@ -1,11 +1,7 @@
-#include <ESP8266WiFi.h>
-#include <ESP8266WebServer.h>
-#include <EEPROM.h>
 #include <Ticker.h>
-#include <PubSubClient.h>
-#include "otatool.h"
 #include "wifimanage.h"
-//#include <Adafruit_Sensor.h>
+#include "otatool.h"
+#include "common.h"
 #include "DHT.h"
 
 //https://randomnerdtutorials.com/esp8266-dht11dht22-temperature-and-humidity-web-server-with-arduino-ide/
@@ -39,45 +35,33 @@ PubSubClient mqttClient(wifiClient);
 const int DHTPin = 0;
 DHT dht(DHTPin, DHTTYPE);
 
-
 void setup()
 {
   Serial.begin(115200);
-  EEPROM.begin(512);
-  dht.begin();
-  Serial.println();
-  int ch = EEPROM.read(225); //resetTimes
+  Serial.println("start......");
+  setVersion(firmversion);
+  setdevicetype(DEVICE);
+  
+  int ch = StartInit();
   Serial.print("ReadResetTimes:");
   Serial.println(ch);
   if (ch > 5 ) {
-    clearroom();
+    StartError();
   }
-  EEPROM.write(225, EEPROM.read(225) + 1);
-  EEPROM.commit();
-
+  
   pinMode(LED, OUTPUT);
-  //pinMode(PIN, INPUT);
   led_timer.attach(0.5, blink);
-
+  
   startWifi();  //连接网络信息
-  initOTA();// 初使化OTA模式
-  led_timer.detach();
-  led_timer.attach(0.2, blink);
-  EEPROM.write(225, 0); //启动成功，清空次数
-  EEPROM.commit();
+  initOTA(LED);// 初使化OTA模式
 
-  if (readmqttip() != "") {
-    char* c = new char[200];  //深度copy一下，否则直接用就不行
-    strcpy(c, readmqttip().c_str());
-    mqttClient.setServer(c, 1883);
-    mqttClient.setCallback(callback);
-    connectMQTT();
-    hasmqtt = true;
-  }
+  String MQTT_TOPIC = "home/" + DEVICE + "/" + readID();
+  initMQTT(MQTT_TOPIC, callback);
+
+  StartFinish();
 
   led_timer.detach();
   digitalWrite(LED, LEDON); //灯常亮，表示连接成功
-  btn_timer.attach(1, button);
 }
 
 void blink() {
