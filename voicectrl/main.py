@@ -7,11 +7,8 @@ from __future__ import annotations
 import logging
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
-
 import asyncio
 import signal
-import sys
-import snowboydecoder
 from myVoice import myVoice
 from hassclient import HomeAssistantClient
 
@@ -19,11 +16,9 @@ logger = logging.getLogger(__name__)
 
 interrupted = False
 
-
 def signal_handler(signal, frame):
     global interrupted
     interrupted = True
-
 
 def interrupt_callback():
     global interrupted
@@ -71,8 +66,6 @@ async def main():
 
     # _stopped = asyncio.Event()
     # await _stopped.wait()
-
-
 
 if __name__ == '__main__':
     logger.info("hello")

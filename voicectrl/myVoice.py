@@ -265,7 +265,6 @@ class myVoice(object):
 
             if len(data) == 0:
                 await asyncio.sleep(sleep_time)
-                # time.sleep(sleep_time)
                 continue
 
             status = self.detector.RunDetection(data)
