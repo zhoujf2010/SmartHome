@@ -33,9 +33,20 @@ void setup() {
   startWifi();  //连接网络信息
   initOTA(LED);// 初使化OTA模式
 
-  String MQTT_TOPIC = "home/" + DEVICE + "/" + readID();
-  initMQTT(MQTT_TOPIC, callback);
+  String MQTT_TOPIC = "homeassistant/" + DEVICE + "/" + readID();
+  initMQTT(MQTT_TOPIC, "/set",false, callback);
 
+  String cfg = String("{");
+  //cfg += "\"device_class\": \"light\"";
+  cfg += ",\"name\": \"" + readID() + "\"";
+  cfg += ",\"unique_id\"" + readID() + "\"";
+  cfg += ",\"command_topic\": \"homeassistant/" + DEVICE + "/" + readID() + "/set\"";
+  cfg += ",\"state_topic\": \"homeassistant/" + DEVICE + "/" + readID() + "/state\"";
+  cfg += "}";
+
+  Serial.println(cfg);
+  sendmqtt("/config", cfg);
+  
   StartFinish();
 
   led_timer.detach();
@@ -103,6 +114,6 @@ void loop() {
     return ;
   wifiloop();
 
-//  sendmqtt("/stat", "on");
+//  sendmqtt("/state", "on");
 //  Serial.println("Relay . . . . . . . . . . . . . . . . . . ON");
 }

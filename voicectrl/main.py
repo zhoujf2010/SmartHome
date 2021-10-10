@@ -59,7 +59,7 @@ async def main():
     await hassclient.connect()
     logger.info("连着至HASS")
 
-    model = "./小度.pmdl"
+    model = "./snowboy/小度.pmdl"
 
     await v.runcheck(model, detected_callback=detect, sensitivity="0.6",
                audio_recorder_callback=rcbk, interrupt_check=interrupt_callback)

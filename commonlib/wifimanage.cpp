@@ -347,6 +347,7 @@ PubSubClient mqttClient(wifiClient);
 bool hasmqtt = false;
 
 String _MQTT_TOPIC = "";
+String _subtopic ="";
 std::function<void(String str)> _callback;
 bool firstconnect = false;
 
@@ -363,9 +364,12 @@ void innercallback(char* topic, byte* payload, unsigned int length) {
   _callback(payload_string);
 }
 
-void initMQTT(String MQTT_TOPIC, std::function<void(String str)> callback) {
+void initMQTT(String MQTT_TOPIC, String subtopic,boolean ignorefirstmsg,std::function<void(String str)> callback) {
   _MQTT_TOPIC = MQTT_TOPIC;
+  _subtopic = subtopic;
   _callback = callback;
+  if (ignorefirstmsg) //可配置首次不跳过
+    firstconnect = false; 
   if (readmqttip() != "") {
     char* c = new char[200];  //深度copy一下，否则直接用就不行
     strcpy(c, readmqttip().c_str());
@@ -383,7 +387,8 @@ void connectMQTT() {
     if (mqttClient.connect(readID().c_str())) {
       Serial.println("connected");
 
-      mqttClient.subscribe(_MQTT_TOPIC.c_str());
+      mqttClient.subscribe((_MQTT_TOPIC+_subtopic).c_str());
+	  mqttClient.setBufferSize(5120);
       Serial.println("Topic:" + _MQTT_TOPIC);
       firstconnect = true;
     } else {

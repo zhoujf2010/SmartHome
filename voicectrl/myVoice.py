@@ -227,7 +227,7 @@ class myVoice(object):
 
     async def runcheck(self, model, detected_callback,
                  audio_recorder_callback, interrupt_check=lambda: False, sensitivity="0.5"):
-        import snowboydetect
+        from snowboy.snowboydetect import snowboydetect
 
         TOP_DIR = os.path.dirname(os.path.abspath(__file__))
         resource = os.path.join(TOP_DIR, "resources/common.res")
