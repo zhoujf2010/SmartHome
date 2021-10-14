@@ -1,3 +1,4 @@
+#pragma once 
 String pageheader = "<!DOCTYPE html>"
                                   "<html>"
                                   "<head>"
@@ -34,7 +35,7 @@ String pageheader = "<!DOCTYPE html>"
 
 
 String pagecontent1 = "<body>"
-                                  "    <h1>mySnoff setup</h1><b>- version: 0.5 -</b>"
+                                  "    <h1>mySnoff setup</h1><b>- version: %CurrentVersion% -</b>"
                                   "    <table style=\"width:100%;border: 1px solid #fff;\">"
                                   "        <tbody>"
                                   "            <tr>"
@@ -67,7 +68,8 @@ String pagecontent1 = "<body>"
                                   
 
 String pagecontent2 = "    <form action=\"/esprestart\" target=\"_top\"><input type=\"submit\" value=\"重启\"></form>"
-                                  "    <form action=\"/cleareeprom\" target=\"_top\"><input type=\"submit\" value=\"清除room\"></form>";
+                                  "    <form action=\"/cleareeprom\" target=\"_top\"><input type=\"submit\" value=\"清除room\"></form>"
+                                  "<a href='/cfg'>其它配置</a>";
 
 String pagecontent3 = 
                                   "</body>"

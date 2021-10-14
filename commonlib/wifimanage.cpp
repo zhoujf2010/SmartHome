@@ -1,11 +1,10 @@
 
 #include <ESP8266WiFi.h>
-#include <ESP8266WebServer.h>
 #include <EEPROM.h>
 #include "wifimanage.h"
-#include "webcontent.h"
 #include "common.h"
 #include <PubSubClient.h>
+#include "webcontent.h"
 
 String CurrentVersion = "1.0";
 String devicetype = "";
@@ -34,6 +33,7 @@ void handle_AProot() {
   script += "document.getElementsByName(\"mqttIP\")[0].value=\"" + readmqttip() + "\";";
   script += "</script>";
 
+  pagecontent1.replace("%CurrentVersion%",CurrentVersion);
   SServerSend += pagecontent1 + pagecontent2 + script + pagecontent3;
   server.send(200, "text/html", SServerSend);
   delay(1);
@@ -275,7 +275,7 @@ String getIP() {
 //160-224 mqttip
 //225 resettimes
 
-void startWifi() {
+ESP8266WebServer* startWifi() {
   String esid = readesid();
   String epass = readData(32, 64);
   String id = readID();
@@ -339,6 +339,7 @@ void startWifi() {
   server.on("/devicetype", handle_devicetype);
   server.begin();
   Serial.println("HTTP server started");
+  return &server;
 }
 
 
@@ -347,11 +348,13 @@ PubSubClient mqttClient(wifiClient);
 bool hasmqtt = false;
 
 String _MQTT_TOPIC = "";
-String _subtopic ="";
-std::function<void(String str)> _callback;
+String _subtopic = "";
+std::function<void(String topic, String payload)> _callback;
 bool firstconnect = false;
 
 void innercallback(char* topic, byte* payload, unsigned int length) {
+  String topic_str = String(topic);
+
   String payload_string = "";
   for (int i = 0; i < length; ++i)
     payload_string += char(payload[i]);
@@ -361,15 +364,16 @@ void innercallback(char* topic, byte* payload, unsigned int length) {
     Serial.println("del:" + payload_string);
     return ;
   }
-  _callback(payload_string);
+  _callback(topic_str, payload_string);
 }
 
-void initMQTT(String MQTT_TOPIC, String subtopic,boolean ignorefirstmsg,std::function<void(String str)> callback) {
+boolean _ignorefirstmsg = false;
+
+void initMQTT(String MQTT_TOPIC, String subtopic, boolean ignorefirstmsg, std::function<void(String topic, String payload)> callback) {
   _MQTT_TOPIC = MQTT_TOPIC;
   _subtopic = subtopic;
   _callback = callback;
-  if (ignorefirstmsg) //可配置首次不跳过
-    firstconnect = false; 
+  _ignorefirstmsg = ignorefirstmsg;
   if (readmqttip() != "") {
     char* c = new char[200];  //深度copy一下，否则直接用就不行
     strcpy(c, readmqttip().c_str());
@@ -387,10 +391,12 @@ void connectMQTT() {
     if (mqttClient.connect(readID().c_str())) {
       Serial.println("connected");
 
-      mqttClient.subscribe((_MQTT_TOPIC+_subtopic).c_str());
-	  mqttClient.setBufferSize(5120);
+      mqttClient.subscribe((_MQTT_TOPIC + _subtopic).c_str());
+      mqttClient.setBufferSize(5120);
       Serial.println("Topic:" + _MQTT_TOPIC);
       firstconnect = true;
+      if (!_ignorefirstmsg) //可配置首次不跳过
+        firstconnect = false;
     } else {
       Serial.print("failed, rc=");
       Serial.print(mqttClient.state());

@@ -30,8 +30,10 @@ bool sendStatus = false;                                     // (Do not Change)
 bool sendStatus1 = false;                                     // (Do not Change)
 bool sendStatus2 = false;                                     // (Do not Change)
 bool requestRestart = false;                                 // (Do not Change)
+int switchNum = 0; //几路开关
 
 String MQTT_TOPIC = "";
+ESP8266WebServer* inner_server;
 
 void setup()
 {
@@ -60,34 +62,161 @@ void setup()
 
   delay(10);
   Serial.println("ready set");
-  
+
+  switchNum = readCusVal(3);
+  Serial.println("switchNum:" + String(switchNum));
+
   //恢复上次开关状态
   digitalWrite(RELAY, readCusVal(0) == 1 ? HIGH : LOW);
-  Serial.println(readCusVal(0));
-
   digitalWrite(RELAY1, readCusVal(1) == 1 ? HIGH : LOW);
-  Serial.println(readCusVal(1));
   digitalWrite(RELAY2, readCusVal(2) == 1 ? HIGH : LOW);
-  Serial.println(readCusVal(2));
   Serial.println("finish set");
   delay(2000); //需要延时2秒，三路的不然会影响按健
   Serial.println("go");
   btn_timer.attach(0.05, button);
   led_timer.attach(0.5, blink);
 
-  startWifi();  //连接网络信息
+  inner_server = startWifi();  //连接网络信息
+  inner_server->on("/cfg", handle_cfg);
+  inner_server->on("/APsubmit2", handle_APsubmit2);
+
   initOTA(LED);// 初使化OTA模式
 
   led_timer.detach();
   led_timer.attach(0.2, blink);
 
-  String MQTT_TOPIC = "home/" + DEVICE + "/" + readID();
-  initMQTT(MQTT_TOPIC, callback);
+  //TODO 通过配置读出几路开关
+  if (switchNum == 1) {
+    String MQTT_TOPIC = "homeassistant/" + DEVICE + "/" + readID();
+    initMQTT(MQTT_TOPIC, "/set", false, callback);
+
+    String cfg = String("{");
+    cfg += "\"name\": \"" + readID() + "\"";
+    cfg += ",\"unique_id\"" + readID() + "\"";
+    cfg += ",\"command_topic\": \"homeassistant/" + DEVICE + "/" + readID() + "/set\"";
+    cfg += ",\"state_topic\": \"homeassistant/" + DEVICE + "/" + readID() + "/state\"";
+    cfg += "}";
+
+    Serial.println(cfg);
+    sendmqtt("/config", cfg);
+  }
+  else {
+    String MQTT_TOPIC = "homeassistant/" + DEVICE;
+    initMQTT(MQTT_TOPIC, "/#", false, callback);
+
+    String cfg = String("{");
+    cfg += "\"name\": \"" + readID() + "\"";
+    cfg += ",\"unique_id\"" + readID() + "\"";
+    cfg += ",\"command_topic\": \"homeassistant/" + DEVICE + "/" + readID() + "/set\"";
+    cfg += ",\"state_topic\": \"homeassistant/" + DEVICE + "/" + readID() + "/state\"";
+    cfg += "}";
+    Serial.println(cfg);
+    sendmqtt("/" + readID() + "/config", cfg);
+
+    cfg = String("{");
+    cfg += "\"name\": \"" + readID() + "_2\"";
+    cfg += ",\"unique_id\"" + readID() + "_2\"";
+    cfg += ",\"command_topic\": \"homeassistant/" + DEVICE + "/" + readID() + "_2/set\"";
+    cfg += ",\"state_topic\": \"homeassistant/" + DEVICE + "/" + readID() + "_2/state\"";
+    cfg += "}";
+    Serial.println(cfg);
+    sendmqtt("/" + readID() + "_2/config", cfg);
+
+    cfg = String("{");
+    cfg += "\"name\": \"" + readID() + "_3\"";
+    cfg += ",\"unique_id\"" + readID() + "_3\"";
+    cfg += ",\"command_topic\": \"homeassistant/" + DEVICE + "/" + readID() + "_3/set\"";
+    cfg += ",\"state_topic\": \"homeassistant/" + DEVICE + "/" + readID() + "_3/state\"";
+    cfg += "}";
+    Serial.println(cfg);
+    sendmqtt("/" + readID() + "_3/config", cfg);
+  }
 
   StartFinish();
 
   led_timer.detach();
   digitalWrite(LED, LEDON); //灯常亮，表示连接成功
+}
+
+
+
+//加载页面
+void handle_cfg() {
+
+  String pageheader = "<!DOCTYPE html>"
+                      "<html>"
+                      "<head>"
+                      "    <meta charset=\"utf-8\">"
+                      "    <meta name=\"viewport\" content=\"width=device-width initial-scale=1maximum-scale=1 user-scalable=no\">"
+                      "    <meta name=\"apple-mobile-web-app-capable\" content=\"yes\">"
+                      "    <meta name=\"apple-mobile-web-app-status-bar-style\" content=\"black\">"
+                      "    <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">"
+                      "    <title>esp8266 WiFi setup control</title>"
+                      "    <style type=\"text/css\">"
+                      "        body {"
+                      "            text-align: center;"
+                      "            font-family: sans-serif;"
+                      "            background-color: #000;"
+                      "            color: #fff;"
+                      "            font-size: 1.2em;"
+                      "        }"
+                      "        .row{"
+                      "            height:30px;"
+                      "        }"
+                      "        .title{"
+                      "            float: left;"
+                      "            width:120px;"
+                      "        }"
+                      "        .content{"
+                      "            float: left;"
+                      "        }"
+                      "        .info{"
+                      "            color:red"
+                      "        }"
+                      "    </style>"
+                      "</head>";
+
+
+  String SServerSend;
+  SServerSend = pageheader;
+
+  String pagecontent1 = "<body>"
+                        "    <h1>额外配置</h1>"
+                        "    <table style=\"width:100%;border: 1px solid #fff;\">"
+                        "        <tbody>"
+                        "            <tr>"
+                        "                <th  style=\"text-align:center;width:100%;\">"
+                        "                    <form action=\"/APsubmit2\" method=\"POST\">"
+                        "                        <div class=\"row\">"
+                        "                            <div class=\"title\">几路开关:</div>"
+                        "                            <div class=\"content\"><input type=\"text\" name=\"num\" value=\"\" /></div>"
+                        "                        </div>"
+                        "                        <input type=\"submit\" value=\"提交\" />"
+                        "                    </form>"
+                        "                </th>"
+                        "                <th style=\"text-align:left;width:50%;\"></th>"
+                        "            </tr>"
+                        "        </tbody>"
+                        "    </table>"
+                        "    <br>";
+
+  String script = "<script>";
+  script += "document.getElementsByName(\"num\")[0].value=\"" + String(switchNum) + "\";";
+  script += "</script>";
+
+  String pagecontent3 =
+    "</body>"
+    "</html>";
+  SServerSend += pagecontent1 + script + pagecontent3;
+  inner_server->send(200, "text/html", SServerSend);
+  delay(1);
+}
+
+void handle_APsubmit2() {
+  String num = inner_server->arg("num");
+  Serial.println("num:" + num);
+  writeCusVal(3, num.toInt());
+  inner_server->send(200, "text/html", "<form action=\"/esprestart\" target=\"_top\"><input type=\"submit\" value=\"restart\"></form>");
 }
 
 void blink() {
@@ -126,7 +255,6 @@ void button() {
     count = 0;
   }
 
-
   if (!digitalRead(BUTTON1)) {
     count1++;
   }
@@ -152,45 +280,56 @@ void button() {
 
 unsigned long checkLastTime;
 
-void callback(String payload_string) {
-  Serial.println("receive:" + payload_string);
-  sendmqtt("/log", "receive mqtt: " + payload_string);
+void callback(String topic, String payload_string) {
+  if (!topic.endsWith("/set"))
+    return;
 
-  if (payload_string == "stat") {
+  Serial.println("receive topic:" + topic);
+  Serial.println("receive payload:" + payload_string);
+  String payload = payload_string;
+  if (topic.indexOf("_2") > 0)
+    payload += "2";
+  if (topic.indexOf("_3") > 0)
+    payload += "3";
+  Serial.println("receive payload2:" + payload);
+
+  sendmqtt("/log", "receive mqtt: " + payload);
+
+  if (payload == "stat") {
   }
-  else if (payload_string == "on") {
+  else if (payload == "ON") {
     digitalWrite(LED, LEDOFF); //有操作后，状态灯就关闭
     digitalWrite(RELAY, HIGH);
     writeCusVal(0, 1);
     sendStatus = true;
   }
-  else if (payload_string == "off") {
+  else if (payload == "OFF") {
     digitalWrite(LED, LEDOFF); //有操作后，状态灯就关闭
     digitalWrite(RELAY, LOW);
     writeCusVal(0, 0);
     sendStatus = true;
   }
-  else if (payload_string == "on1") {
+  else if (payload == "ON2") {
     digitalWrite(RELAY1, HIGH);
     writeCusVal(1, 1);
     sendStatus1 = true;
   }
-  else if (payload_string == "off1") {
+  else if (payload == "OFF2") {
     digitalWrite(RELAY1, LOW);
     writeCusVal(1, 0);
     sendStatus1 = true;
   }
-  else if (payload_string == "on2") {
+  else if (payload == "ON3") {
     digitalWrite(RELAY2, HIGH);
     writeCusVal(2, 1);
     sendStatus2 = true;
   }
-  else if (payload_string == "off2") {
+  else if (payload == "OFF3") {
     digitalWrite(RELAY2, LOW);
     writeCusVal(2, 0);
     sendStatus2 = true;
   }
-  else if (payload_string == "reset") {
+  else if (payload == "reset") {
     blinkLED(LED, 400, 4);
     ESP.restart();
   }
@@ -202,41 +341,58 @@ void loop() {
     return ;
   wifiloop();
 
-  if (sendStatus) { //发送至mq
-    if (digitalRead(RELAY) == HIGH)  {
-      sendmqtt("/stat", "on");
-      Serial.println("Relay . . . . . . . . . . . . . . . . . . ON");
-      writeCusVal(0, 1);
+  if (switchNum == 1) { //一路开关
+    if (sendStatus) { //发送至mq
+      if (digitalRead(RELAY) == HIGH)  {
+        sendmqtt("/state", "ON");
+        Serial.println("Relay . . . . . . . . . . . . . . . . . . ON");
+        writeCusVal(0, 1);
 
-    } else {
-      sendmqtt("/stat", "off");
-      Serial.println("Relay . . . . . . . . . . . . . . . . . . OFF");
-      writeCusVal(0, 0);
+      } else {
+        sendmqtt("/state", "OFF");
+        Serial.println("Relay . . . . . . . . . . . . . . . . . . OFF");
+        writeCusVal(0, 0);
+      }
+      sendStatus = false;
     }
-    sendStatus = false;
   }
-  if (sendStatus1) { //发送至mq
-    if (digitalRead(RELAY1) == HIGH)  {
-      sendmqtt("/stat", "on1");
-      Serial.println("Relay . . . . . . . . . . . . . . . . . . ON1");
-      writeCusVal(1, 1);
-    } else {
-      sendmqtt("/stat", "off1");
-      Serial.println("Relay . . . . . . . . . . . . . . . . . . OFF1");
-      writeCusVal(1, 0);
+  else { //三路开关
+    if (sendStatus) { //发送至mq
+      if (digitalRead(RELAY) == HIGH)  {
+        sendmqtt("/" + readID() + "/state", "ON");
+        Serial.println("Relay . . . . . . . . . . . . . . . . . . ON");
+        writeCusVal(0, 1);
+
+      } else {
+        sendmqtt("/" + readID() + "/state", "OFF");
+        Serial.println("Relay . . . . . . . . . . . . . . . . . . OFF");
+        writeCusVal(0, 0);
+      }
+      sendStatus = false;
     }
-    sendStatus1 = false;
-  }
-  if (sendStatus2) { //发送至mq
-    if (digitalRead(RELAY2) == HIGH)  {
-      sendmqtt("/stat", "on2");
-      Serial.println("Relay . . . . . . . . . . . . . . . . . . ON2");
-      writeCusVal(2, 1);
-    } else {
-      sendmqtt("/stat", "off2");
-      Serial.println("Relay . . . . . . . . . . . . . . . . . . OFF2");
-      writeCusVal(2, 0);
+    if (sendStatus1) { //发送至mq
+      if (digitalRead(RELAY1) == HIGH)  {
+        sendmqtt("/" + readID() + "_2/state", "ON");
+        Serial.println("Relay . . . . . . . . . . . . . . . . . . ON2");
+        writeCusVal(1, 1);
+      } else {
+        sendmqtt("/" + readID() + "_2/state", "OFF");
+        Serial.println("Relay . . . . . . . . . . . . . . . . . . OFF2");
+        writeCusVal(1, 0);
+      }
+      sendStatus1 = false;
     }
-    sendStatus2 = false;
+    if (sendStatus2) { //发送至mq
+      if (digitalRead(RELAY2) == HIGH)  {
+        sendmqtt("/" + readID() + "_3/state", "ON");
+        Serial.println("Relay . . . . . . . . . . . . . . . . . . ON3");
+        writeCusVal(2, 1);
+      } else {
+        sendmqtt("/" + readID() + "_3/state", "OFF");
+        Serial.println("Relay . . . . . . . . . . . . . . . . . . OFF3");
+        writeCusVal(2, 0);
+      }
+      sendStatus2 = false;
+    }
   }
 }

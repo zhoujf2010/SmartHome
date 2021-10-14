@@ -59,7 +59,7 @@ void setup()
   led_timer.attach(0.2, blink);
   
   String MQTT_TOPIC = "home/" + DEVICE + "/" + readID();
-  initMQTT(MQTT_TOPIC, callback);
+  initMQTT(MQTT_TOPIC, "", true,callback);
 
   //启动红外
   irrecv.enableIRIn();

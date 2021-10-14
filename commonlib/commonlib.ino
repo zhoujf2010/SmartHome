@@ -37,9 +37,9 @@ void setup() {
   initMQTT(MQTT_TOPIC, "/set",false, callback);
 
   String cfg = String("{");
-  //cfg += "\"device_class\": \"light\"";
-  cfg += ",\"name\": \"" + readID() + "\"";
+  cfg += "\"name\": \"" + readID() + "\"";
   cfg += ",\"unique_id\"" + readID() + "\"";
+  //cfg += ",\"device_class\": \"light\"";
   cfg += ",\"command_topic\": \"homeassistant/" + DEVICE + "/" + readID() + "/set\"";
   cfg += ",\"state_topic\": \"homeassistant/" + DEVICE + "/" + readID() + "/state\"";
   cfg += "}";
@@ -60,7 +60,7 @@ void blink() {
 Ticker btn_timer;
 int BUTTON = -1;
 
-void callback(String payload_string) {
+void callback(String topic, String payload_string) {
   Serial.println("receive:" + payload_string);
 
   int v = payload_string.toInt();
