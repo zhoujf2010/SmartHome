@@ -38,7 +38,7 @@ void setup() {
 
   String cfg = String("{");
   cfg += "\"name\": \"" + readID() + "\"";
-  cfg += ",\"unique_id\"" + readID() + "\"";
+  cfg += ",\"unique_id\":\"" + readID() + "\"";
   //cfg += ",\"device_class\": \"light\"";
   cfg += ",\"command_topic\": \"homeassistant/" + DEVICE + "/" + readID() + "/set\"";
   cfg += ",\"state_topic\": \"homeassistant/" + DEVICE + "/" + readID() + "/state\"";

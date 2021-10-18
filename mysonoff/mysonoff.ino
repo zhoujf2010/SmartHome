@@ -7,7 +7,7 @@
 
 
 //易微联设备
-String firmversion =    "2.1";
+String firmversion =    "2.2";
 String DEVICE      =    "switch";
 #define BUTTON          0
 #define BUTTON1         9
@@ -85,51 +85,41 @@ void setup()
   led_timer.detach();
   led_timer.attach(0.2, blink);
 
-  //TODO 通过配置读出几路开关
-  if (switchNum == 1) {
-    String MQTT_TOPIC = "homeassistant/" + DEVICE + "/" + readID();
-    initMQTT(MQTT_TOPIC, "/set", false, callback);
+  String MQTT_TOPIC = "homeassistant/" + DEVICE + "/" + readID();
+  initMQTT(MQTT_TOPIC, "/set", false, callback);
 
-    String cfg = String("{");
-    cfg += "\"name\": \"" + readID() + "\"";
-    cfg += ",\"unique_id\"" + readID() + "\"";
-    cfg += ",\"command_topic\": \"homeassistant/" + DEVICE + "/" + readID() + "/set\"";
-    cfg += ",\"state_topic\": \"homeassistant/" + DEVICE + "/" + readID() + "/state\"";
-    cfg += "}";
+  String cfg = String("{");
+  cfg += "\"name\": \"" + readID() + "\"";
+  cfg += ",\"unique_id\":\"" + readID() + "\"";
+  cfg += ",\"command_topic\": \"homeassistant/" + DEVICE + "/" + readID() + "/set\"";
+  cfg += ",\"state_topic\": \"homeassistant/" + DEVICE + "/" + readID() + "/state\"";
+  cfg += "}";
 
-    Serial.println(cfg);
-    sendmqtt("/config", cfg);
-  }
-  else {
-    String MQTT_TOPIC = "homeassistant/" + DEVICE;
-    initMQTT(MQTT_TOPIC, "/#", false, callback);
+  Serial.println(cfg);
+  sendmqtt("/config", cfg);
 
-    String cfg = String("{");
-    cfg += "\"name\": \"" + readID() + "\"";
-    cfg += ",\"unique_id\"" + readID() + "\"";
-    cfg += ",\"command_topic\": \"homeassistant/" + DEVICE + "/" + readID() + "/set\"";
-    cfg += ",\"state_topic\": \"homeassistant/" + DEVICE + "/" + readID() + "/state\"";
-    cfg += "}";
-    Serial.println(cfg);
-    sendmqtt("/" + readID() + "/config", cfg);
-
+  if (switchNum == 3) {
     cfg = String("{");
     cfg += "\"name\": \"" + readID() + "_2\"";
-    cfg += ",\"unique_id\"" + readID() + "_2\"";
-    cfg += ",\"command_topic\": \"homeassistant/" + DEVICE + "/" + readID() + "_2/set\"";
-    cfg += ",\"state_topic\": \"homeassistant/" + DEVICE + "/" + readID() + "_2/state\"";
+    cfg += ",\"unique_id\":\"" + readID() + "_2\"";
+    cfg += ",\"command_topic\": \"homeassistant/" + DEVICE + "/" + readID() + "/set\"";
+    cfg += ",\"state_topic\": \"homeassistant/" + DEVICE + "/" + readID() + "/state\"";
+    cfg += ",\"payload_on\":\"ON2\",\"state_on\":\"ON2\"";
+    cfg += ",\"payload_off\":\"OFF2\",\"state_off\":\"OFF2\"";
     cfg += "}";
     Serial.println(cfg);
-    sendmqtt("/" + readID() + "_2/config", cfg);
+    sendmqtt("homeassistant/" + DEVICE + "/" + readID() + "_2/config", cfg);
 
     cfg = String("{");
     cfg += "\"name\": \"" + readID() + "_3\"";
-    cfg += ",\"unique_id\"" + readID() + "_3\"";
-    cfg += ",\"command_topic\": \"homeassistant/" + DEVICE + "/" + readID() + "_3/set\"";
-    cfg += ",\"state_topic\": \"homeassistant/" + DEVICE + "/" + readID() + "_3/state\"";
+    cfg += ",\"unique_id\":\"" + readID() + "_3\"";
+    cfg += ",\"command_topic\": \"homeassistant/" + DEVICE + "/" + readID() + "/set\"";
+    cfg += ",\"state_topic\": \"homeassistant/" + DEVICE + "/" + readID() + "/state\"";
+    cfg += ",\"payload_on\":\"ON3\",\"state_on\":\"ON3\"";
+    cfg += ",\"payload_off\":\"OFF3\",\"state_off\":\"OFF3\"";
     cfg += "}";
     Serial.println(cfg);
-    sendmqtt("/" + readID() + "_3/config", cfg);
+    sendmqtt("homeassistant/" + DEVICE + "/" + readID() + "_3/config", cfg);
   }
 
   StartFinish();
@@ -281,18 +271,9 @@ void button() {
 unsigned long checkLastTime;
 
 void callback(String topic, String payload_string) {
-  if (!topic.endsWith("/set"))
-    return;
-
   Serial.println("receive topic:" + topic);
   Serial.println("receive payload:" + payload_string);
   String payload = payload_string;
-  if (topic.indexOf("_2") > 0)
-    payload += "2";
-  if (topic.indexOf("_3") > 0)
-    payload += "3";
-  Serial.println("receive payload2:" + payload);
-
   sendmqtt("/log", "receive mqtt: " + payload);
 
   if (payload == "stat") {
@@ -341,58 +322,41 @@ void loop() {
     return ;
   wifiloop();
 
-  if (switchNum == 1) { //一路开关
-    if (sendStatus) { //发送至mq
-      if (digitalRead(RELAY) == HIGH)  {
-        sendmqtt("/state", "ON");
-        Serial.println("Relay . . . . . . . . . . . . . . . . . . ON");
-        writeCusVal(0, 1);
+  if (sendStatus) { //发送至mq
+    if (digitalRead(RELAY) == HIGH)  {
+      sendmqtt("/state", "ON");
+      Serial.println("Relay . . . . . . . . . . . . . . . . . . ON");
+      writeCusVal(0, 1);
 
-      } else {
-        sendmqtt("/state", "OFF");
-        Serial.println("Relay . . . . . . . . . . . . . . . . . . OFF");
-        writeCusVal(0, 0);
-      }
-      sendStatus = false;
+    } else {
+      sendmqtt("/state", "OFF");
+      Serial.println("Relay . . . . . . . . . . . . . . . . . . OFF");
+      writeCusVal(0, 0);
     }
+    sendStatus = false;
   }
-  else { //三路开关
-    if (sendStatus) { //发送至mq
-      if (digitalRead(RELAY) == HIGH)  {
-        sendmqtt("/" + readID() + "/state", "ON");
-        Serial.println("Relay . . . . . . . . . . . . . . . . . . ON");
-        writeCusVal(0, 1);
-
-      } else {
-        sendmqtt("/" + readID() + "/state", "OFF");
-        Serial.println("Relay . . . . . . . . . . . . . . . . . . OFF");
-        writeCusVal(0, 0);
-      }
-      sendStatus = false;
+  if (sendStatus1) { //发送至mq
+    if (digitalRead(RELAY1) == HIGH)  {
+      sendmqtt("/state", "ON2");
+      Serial.println("Relay . . . . . . . . . . . . . . . . . . ON2");
+      writeCusVal(1, 1);
+    } else {
+      sendmqtt("/state", "OFF2");
+      Serial.println("Relay . . . . . . . . . . . . . . . . . . OFF2");
+      writeCusVal(1, 0);
     }
-    if (sendStatus1) { //发送至mq
-      if (digitalRead(RELAY1) == HIGH)  {
-        sendmqtt("/" + readID() + "_2/state", "ON");
-        Serial.println("Relay . . . . . . . . . . . . . . . . . . ON2");
-        writeCusVal(1, 1);
-      } else {
-        sendmqtt("/" + readID() + "_2/state", "OFF");
-        Serial.println("Relay . . . . . . . . . . . . . . . . . . OFF2");
-        writeCusVal(1, 0);
-      }
-      sendStatus1 = false;
+    sendStatus1 = false;
+  }
+  if (sendStatus2) { //发送至mq
+    if (digitalRead(RELAY2) == HIGH)  {
+      sendmqtt("/state", "ON3");
+      Serial.println("Relay . . . . . . . . . . . . . . . . . . ON3");
+      writeCusVal(2, 1);
+    } else {
+      sendmqtt("/state", "OFF3");
+      Serial.println("Relay . . . . . . . . . . . . . . . . . . OFF3");
+      writeCusVal(2, 0);
     }
-    if (sendStatus2) { //发送至mq
-      if (digitalRead(RELAY2) == HIGH)  {
-        sendmqtt("/" + readID() + "_3/state", "ON");
-        Serial.println("Relay . . . . . . . . . . . . . . . . . . ON3");
-        writeCusVal(2, 1);
-      } else {
-        sendmqtt("/" + readID() + "_3/state", "OFF");
-        Serial.println("Relay . . . . . . . . . . . . . . . . . . OFF3");
-        writeCusVal(2, 0);
-      }
-      sendStatus2 = false;
-    }
+    sendStatus2 = false;
   }
 }

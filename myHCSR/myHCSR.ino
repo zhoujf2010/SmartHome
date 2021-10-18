@@ -43,8 +43,19 @@ void setup()
   startWifi();  //连接网络信息
   initOTA(LED);// 初使化OTA模式
 
-  String MQTT_TOPIC = "home/" + DEVICE + "/" + readID();
-  initMQTT(MQTT_TOPIC, callback);
+  String MQTT_TOPIC = "homeassistant/" + String("binary_sensor") + "/" + readID();
+  initMQTT(MQTT_TOPIC, "/set",false, callback);
+
+  String cfg = String("{");
+  cfg += "\"name\": \"" + readID() + "\"";
+  cfg += ",\"unique_id\":\"" + readID() + "\"";
+  //cfg += ",\"device_class\": \"motion\"";
+  cfg += ",\"state_topic\": \"homeassistant/" + String("binary_sensor") + "/" + readID() + "/state\"";
+  cfg += "}";
+
+  Serial.println(cfg);
+  sendmqtt("/config", cfg);
+  
 
   StartFinish();
 
@@ -77,7 +88,7 @@ void button() {
   oldstat = newstat;
 }
 
-void callback(String payload_string) {
+void callback(String topic, String payload_string) {
   Serial.println("receive:" + payload_string);
   
   if (payload_string == "stat") {
@@ -100,10 +111,10 @@ void loop() {
 
   if (sendStatus) { //发送至mq
     if (digitalRead(PIN) == HIGH)  {
-      sendmqtt("/stat", "1");
+      sendmqtt("/state", "ON");
       Serial.println("statchange . . . . . . . . . . . . . . . . . . 1");
     } else {
-      sendmqtt("/stat", "0");
+      sendmqtt("/state", "OFF");
       Serial.println("statchange . . . . . . . . . . . . . . . . . . 0");
     }
     sendStatus = false;

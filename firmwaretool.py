@@ -151,8 +151,8 @@ def autoTryCommit(url, pload, times):
         try:
             return requests.post(url, data=pload, timeout=5)
         except Exception as ex:
-            print("try.. again")
-            time.sleep(2000)
+            print("failed,try.. again,url:",url)
+            time.sleep(2)
             continue
     raise("多次尝试失败")
 

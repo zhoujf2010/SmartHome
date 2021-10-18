@@ -407,7 +407,9 @@ void connectMQTT() {
 }
 
 void sendmqtt(String path, String msg) {
-  String path2 = _MQTT_TOPIC + path;
+  String path2 = path;
+  if (path.startsWith("/"))
+    path2 = _MQTT_TOPIC + path;
 
   if (hasmqtt && mqttClient.connected()) {
     mqttClient.publish(path2.c_str(), msg.c_str());
