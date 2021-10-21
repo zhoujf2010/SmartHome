@@ -7,7 +7,7 @@
 
 
 //易微联设备
-String firmversion =    "2.2";
+String firmversion =    "2.3";
 String DEVICE      =    "switch";
 #define BUTTON          0
 #define BUTTON1         9
@@ -219,28 +219,36 @@ int presstimes = 0;
 void button() {
   if (!digitalRead(BUTTON)) {
     count++;
-    if (count > 100) {//长按5秒
-      digitalWrite(LED, LEDON); //亮起
-    }
   }
   else {
     if (count > 1 && count <= 40) {
-      digitalWrite(LED, LEDOFF); //有操作后，状态灯就关闭
-      digitalWrite(RELAY, !digitalRead(RELAY));
-      sendStatus = true;
-      sendmqtt("/log", "press button");
+      presstimes ++;
 
-      presstimes ++; //记录3秒内连接压
-      if ((millis() > lastPress + (3000)) || (millis() < lastPress)) {
-        lastPress = millis();
-        presstimes = 0;
-      }
-      if (presstimes >= 5) {
+      if (presstimes > 8) {
         Serial.println("\n\nSonoff Rebooting . . . . . . . . Please Wait");
+        presstimes = 0;
         clearroom();
         blinkLED(LED, 400, 4);
         ESP.restart();
+        return ;
       }
+      //Serial.println("current:" + String(millis()) + "  lastPress:" + String(lastPress));
+
+      if (millis() - lastPress < 1300) {
+        count = 0;
+        Serial.println("--> less than 2 sec");
+        if (presstimes >= 2) { //可能连续多次按，准备重置
+          lastPress = millis();
+          //Serial.println("--> continuePress:" + String(presstimes));
+        }
+        return;
+      }
+      lastPress = millis();
+      presstimes = 0;
+
+      digitalWrite(LED, LEDOFF); //有操作后，状态灯就关闭
+      digitalWrite(RELAY, !digitalRead(RELAY));
+      sendStatus = true;
     }
     count = 0;
   }
@@ -274,7 +282,7 @@ void callback(String topic, String payload_string) {
   Serial.println("receive topic:" + topic);
   Serial.println("receive payload:" + payload_string);
   String payload = payload_string;
-  sendmqtt("/log", "receive mqtt: " + payload);
+  //sendmqtt("/log", "receive mqtt: " + payload);
 
   if (payload == "stat") {
   }

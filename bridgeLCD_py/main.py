@@ -68,6 +68,7 @@ class SockClient():
                     self.sock.connect((self.host_ip, self.host_port))
                     self.sock.settimeout(None)
                     self.connected = True
+                    logger.info("socket connected")
                 except socket.error as e:
                     logger.error('socket Connect error:' + str(e))
                     pass
@@ -116,9 +117,9 @@ class SockClient():
         elif tp == "page0":
             if dt["index"] == 0:
                 if dt["value"] == 1:
-                    self.sendMqtt("home/switch/MySmart-8ed41d","on")
+                    self.sendMqtt("homeassistant/switch/MySmart-d5fa66/set","ON")
                 elif dt["value"] == 0:
-                    self.sendMqtt("home/switch/MySmart-8ed41d","off")
+                    self.sendMqtt("homeassistant/switch/MySmart-d5fa66/set","OFF")
 
         return ""
 
@@ -135,14 +136,14 @@ class SockClient():
         switch = str(msg.payload.decode("utf-8"))
         logger.info('receive from mqtt=>' + msg.topic+" " + switch)
 
-        if msg.topic =="home/switch/MySmart-8ed41d/stat":
+        if msg.topic =="homeassistant/switch/MySmart-d5fa66/state":
             obj = {}
             obj["type"] = "page0"
             obj["index"] = 0
-            if switch == "on":
+            if switch == "ON":
                 obj["value"] = 1
                 self.page0_sel = self.page0_sel | 0x01
-            elif switch == "off":
+            elif switch == "OFF":
                 obj["value"] = 0
                 self.page0_sel = self.page0_sel & ~0x01
 
@@ -183,6 +184,7 @@ if __name__ == '__main__':
 
     logger.info("started")
     s = SockClient(None, "192.168.3.182", 81)
+    # s = SockClient(None, "100.85.157.158", 81)
     s.start()
 
     # url = 'home/mylightsensor/MySonoff-df62df' #太阳能
