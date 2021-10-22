@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title></title>
+  <link rel="stylesheet" href="./epMessageEntityList.css?t=2019_09_11" />
+</head>
+
+<body>
+  <button onclick="getData()">获取数据</button>
+  <button onclick="getRemoveItems()">获取被删除的元素</button>
+  <button onclick="toggleEditable()">切换可编辑</button>
+  <button onclick="toggleRemovable()">切换可删除</button>
+  <button onclick="getSelecteds()">获取选中择数据</button>
+  <button onclick="getSelectedsKey()">获取选中择数据的指定属性</button>
+  <button onclick="hiddenAllActionBtns();this.parentNode.removeChild(this);">隐藏所有操作按钮</button>
+  <label> 最大行数目
+    <select id="maxRowSelect">
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+      <option value="5">5</option>
+      <option value="6">6</option>
+      <option value="7">7</option>
+      <option value="8">8</option>
+      <option value="9">9</option>
+      <option value="10">10</option>
+    </select>
+  </label>
+
+  <div id="app"></div>
+  <!-- 数据模拟 -->
+  <script src="./mock-min.js"></script>
+  <script src="./data.js"></script>
+  <!-- end -->
+  <script src="./vue.min.js"></script>
+
+  <script src="./epMessageEntityList.umd.min.js?t=2019_09_11"></script>
+  <script>
+
+    var maxRowSelect = document.getElementById('maxRowSelect');
+
+    maxRowSelect.addEventListener('change', function (ev) {
+      MessageEntityList.setMaxRows(parseInt(this.value, 10) || 5);
+    });
+    function genderMessageEntityList() {
+      var app = new Vue({
+        // render: h => h(MessageList)
+        render: function (h) {
+          return h(epMessageEntityList);
+        }
+      }).$mount('#app');
+      return app.$children[0];
+    }
+
+    var MessageEntityList = genderMessageEntityList();
+    maxRowSelect.value = MessageEntityList.getMaxRows();
+    // getMessageList 方法的 扩展 会在消息和标记中多带入下拉框对应的text
+    function getFullData() {
+      // 原始数据
+      var messageList = MessageEntityList.getMessageList();
+
+      // 下拉数据源
+      var entityTypes = JSON.parse(JSON.stringify(MessageEntityList.entityTypes));
+      var intentionTypes = [];
+      $.each(JSON.parse(JSON.stringify(MessageEntityList.intentionTypes)), function (i, list) {
+        intentionTypes = intentionTypes.concat(list);
+      });
+
+      var entityTextMap = {};
+      var intentionTextMap = {};
+
+      $.each(entityTypes, function (i, item) {
+        entityTextMap[item.id] = item.text;
+      });
+      $.each(intentionTypes, function (i, item) {
+        intentionTextMap[item.id] = item.text;
+      });
+
+      // 补充响应的text数据
+      $.each(messageList, function (i, message) {
+        // 消息 intent 对应的 text
+        message.intentOrfeeadback = intentionTextMap[message.intent];
+
+        // 标记中的
+        if (message.entities && message.entities.length) {
+          $.each(message.entities, function (j, ent) {
+            ent.labelinfo = entityTextMap[ent.entity];
+          });
+        }
+      });
+
+      return messageList;
+    }
+
+    /**
+     * 点击编辑
+     *
+     * @param {Object} currA 当前点击的A的全部数据
+     * @param {Object} prevQ 当前点击的A的前一条数据Q 由于存在移动可能 不能确保一定是Q
+     */
+    MessageEntityList.onMessageEdit = function (currA, prevQ) {
+      if (!currA.intent) {
+        return alert('请先选择类型');
+      }
+      alert('点击编辑：' + JSON.stringify({
+        A: currA,
+        Q: prevQ
+      }));
+      // todo 可以取需要的数据 打开 dialog
+    };
+
+    /**
+     * 点击刷新
+     *
+     * @param {Object} currA 当前点击的A的全部数据
+     * @param {Object} prevQ 当前点击的A的前一条数据Q 由于存在移动可能 不能确保一定是Q
+     * @param {function} update 回调函数 用于更新新的数据 传递新的 A 数据进去即可
+     */
+    MessageEntityList.onMessageRefresh = function a(currA, prevQ, update) {
+      alert('点击刷新：' + JSON.stringify({
+        A: currA,
+        Q: prevQ
+      }));
+      // todo 发请求拿新数据
+      // 模拟修改
+      var newA = JSON.parse(JSON.stringify(currA));
+      newA.message += newA.message;
+      // 更新
+      update(newA);
+    };
+
+    /**
+     * 消息前的下拉框变化
+     * @param {string} intention 最新的下拉框值
+     * @param {object} message 当前消息数据引用 属性值可直接修改 响应式,但本身引用不可变
+     */
+    MessageEntityList.onMessageIntentionChange = function (intention, message, index) {
+      console.log('下拉框值变化');
+      console.log(intention, message, index);
+
+      message.entities = [];
+      message.message = '下拉框值变了' + intention;
+      // message 下的每个属性都可修改  但是不能对message = {} 进行类似这种的赋值
+    }
+
+    MessageEntityList.setData(mockData);
+
+    function getData() {
+      alert(JSON.stringify(MessageEntityList.getMessageList(), 0, 4));
+    }
+
+    function getRemoveItems() {
+      // 调用 MessageEntityList.getRemoveItems(propName) 方法可获取当前列表中被删除的元素 propName 为要获取的属性名 不传时获取完整数据
+      // 此处以每个消息的原始文本内容示意 可换成其id 方便后端进行查找删除
+      alert(JSON.stringify(MessageEntityList.getRemoveItems('message'), 0, 4));
+      // 保存完成可调用此方法清空记录
+      MessageEntityList.clearRemoveItems();
+
+      // 如果用不到请忽略，getMessageList 方法获取的仍是最新的数据 也可以从此中进行分析获取已删除数据
+    }
+
+    // 控制消息是否可编辑 默认为 true， 可直接对属性进行修改 但必须保证赋值为布尔值
+    // MessageEntityList.messageEditable
+    // 控制消息是否可删除 默认为 true， 可直接对属性进行修改 但必须保证赋值为布尔值
+    // MessageEntityList.messageRemovable
+    function toggleRemovable() {
+      MessageEntityList.messageRemovable = !MessageEntityList.messageRemovable;
+      alert('当前可删除状态' + MessageEntityList.messageRemovable);
+    }
+
+    function toggleEditable() {
+      MessageEntityList.messageEditable = !MessageEntityList.messageEditable;
+      alert('当前可编辑状态' + MessageEntityList.messageEditable);
+    }
+    function getSelecteds() {
+      var selecteds = MessageEntityList.getSelecteds();
+      alert('当前选中的数据为\n:' + JSON.stringify(selecteds, 0, 2));
+    }
+    function getSelectedsKey() {
+      var prop = window.prompt('请输入要获取的属性名称', 'message') || undefined;
+      var selecteds = MessageEntityList.getSelecteds(prop);
+      alert('当前选中的数据的指定属性为\n:' + JSON.stringify(selecteds, 0, 2));
+    }
+    function hiddenAllActionBtns() {
+      var style = document.createElement('style');
+      style.textContent = '.ep-message-item-actions {display: none !important;}';
+      document.getElementsByTagName('head')[0].appendChild(style);
+      try {
+        var ev = typeof window.Event === "function" ? new Event('resize') : (function () {
+          var e = document.createEvent('Event');
+          e.initEvent('resize', true, true);
+          return e;
+        })();
+        window.dispatchEvent(ev);
+      } catch (error) { }
+    }
+
+  </script>
+</body>
+
+</html>
