@@ -14,3 +14,5 @@
 /bridgeLCD_py/*.log
 /devices.csv
 *.pyc
+/AIvoice/server/ai/gen
+/AIvoice/server/ai/logs

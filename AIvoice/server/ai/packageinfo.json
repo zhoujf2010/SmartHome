@@ -1,0 +1,213 @@
+{
+	"packagInfo": {
+		"name": "分类实体",
+		"version": "1.0",
+		"init": "modelRun.init",
+		"train": "modelRun.train",
+		"deploy": "modelRun.deploy",
+		"predict": "modelRun.predict"
+	},
+	"steps": {
+		"init": [
+			{
+				"parameterName": "whlsource",
+				"parameterType": "String",
+				"defaultValue": "${prop.whlurl}",
+				"desc": "依赖包下载地址"
+			}
+		],
+		"train": [
+			{
+				"parameterName": "bertmodel",
+				"parameterType": "modelchoose",
+				"defaultValue": "chinese_bert",
+				"desc": "bert 模型下载地址"
+			},
+			{
+				"parameterName": "dicturl",
+				"parameterType": "dictchoose",
+				"defaultValue": "",
+				"desc": "字典文件"
+			},
+			{
+				"parameterName": "jdbcurl",
+				"parameterType": "datasource",
+				"defaultValue": "0",
+				"desc": "智能客服数据库jdbc连接"
+			},
+
+			{
+				"parameterName": "ner_num_train_epochs",
+				"parameterType": "String",
+				"defaultValue": "20",
+				"desc": "ner模型训练周期，深度学习训练参数"
+			},
+			{
+				"parameterName": "ner_batch_size",
+				"parameterType": "String",
+				"defaultValue": "64",
+				"desc": "ner模型训练batch大小, 深度学习训练参数"
+			},
+			{
+				"parameterName": "savemodelurl",
+				"parameterType": "String",
+				"defaultValue": "${prop.sysurl}/rest/modelresult/modelupload",
+				"desc": "模型保存地址"
+			},
+			{
+				"parameterName": "classifier_model_name",
+				"parameterType": "String",
+				"defaultValue": "zzp_nb_classifier",
+				"desc": "classifier模型上传包名称"
+			},
+			{
+				"parameterName": "word_slot_model_name",
+				"parameterType": "String",
+				"defaultValue": "zzp_nb_word_slot",
+				"desc": "实体识别模型上传包名称"
+			},
+			{
+				"parameterName": "table",
+				"parameterType": "String",
+				"defaultValue": "label_7b64f1c3aed84e48add4e8f446bf9ba5",
+				"desc": "标注数据表格"
+			},
+			{
+				"parameterName": "content",
+				"parameterType": "String",
+				"defaultValue": "content",
+				"desc": "标注数据表格文本内容字段"
+			},
+			{
+				"parameterName": "classifier_model",
+				"parameterType": "list",
+				"defaultValue": "BM25",
+				"valuechoose": "BM25,Bert",
+				"desc": "classifier算法选择"
+			},
+			{
+				"parameterName": "word_slot_model",
+				"parameterType": "list",
+				"defaultValue": "JieBa",
+				"valuechoose": "JieBa",
+				"desc": "实体识别算法选择"
+			}
+		],
+		"deploy": [
+			{
+				"parameterName": "bertmodel",
+				"parameterType": "modelchoose",
+				"defaultValue": "chinese_bert",
+				"desc": "bert 模型下载地址"
+			},
+			{
+				"parameterName": "classifier_model_url",
+				"parameterType": "modelchoose",
+				"defaultValue": "zzp_nb_classifier",
+				"desc": "classifier模型下载地址"
+			},
+			{
+				"parameterName": "word_slot_model_url",
+				"parameterType": "modelchoose",
+				"defaultValue": "zzp_nb_word_slot",
+				"desc": "实体识别模型下载地址"
+			},
+			{
+				"parameterName": "port",
+				"parameterType": "int",
+				"defaultValue": "5005",
+				"desc": "服务端口"
+			},
+			{
+				"parameterName": "serviceName",
+				"parameterType": "String",
+				"defaultValue": "wechat",
+				"desc": "服务名"
+			},
+			{
+				"parameterName": "classifier_model",
+				"parameterType": "list",
+				"defaultValue": "BM25",
+				"valuechoose": "BM25,Bert",
+				"desc": "classifier算法选择"
+			},
+			{
+				"parameterName": "word_slot_model",
+				"parameterType": "list",
+				"defaultValue": "JieBa",
+				"valuechoose": "JieBa",
+				"desc": "实体识别算法选择"
+			}
+		],
+		"predict": [
+			{
+				"parameterName": "bertmodel",
+				"parameterType": "modelchoose",
+				"defaultValue": "chinese_bert",
+				"desc": "bert 模型下载地址"
+			},
+			{
+				"parameterName": "classifier_model_url",
+				"parameterType": "modelchoose",
+				"defaultValue": "zzp_nb_classifier",
+				"desc": "classifier模型下载地址"
+			},
+			{
+				"parameterName": "word_slot_model_url",
+				"parameterType": "modelchoose",
+				"defaultValue": "zzp_nb_word_slot",
+				"desc": "实体识别模型下载地址"
+			},
+			{
+				"parameterName": "classifier_model",
+				"parameterType": "list",
+				"defaultValue": "BM25",
+				"valuechoose": "BM25,Bert",
+				"desc": "classifier算法选择"
+			},
+			{
+				"parameterName": "word_slot_model",
+				"parameterType": "list",
+				"defaultValue": "JieBa",
+				"valuechoose": "JieBa",
+				"desc": "实体识别算法选择"
+			},
+			{
+				"parameterName": "jdbcurl",
+				"parameterType": "datasource",
+				"defaultValue": "0",
+				"desc": "智能客服数据库jdbc连接"
+			},
+			{
+				"parameterName": "table",
+				"parameterType": "String",
+				"defaultValue": "label_7b64f1c3aed84e48add4e8f446bf9ba5",
+				"desc": "标注数据表格"
+			},
+			{
+				"parameterName": "content",
+				"parameterType": "String",
+				"defaultValue": "content",
+				"desc": "标注数据表格文本内容字段"
+			},
+			{
+				"parameterName": "rowguid",
+				"parameterType": "String",
+				"defaultValue": "rowguid",
+				"desc": "标注数据表格主键"
+			},
+			{
+				"parameterName": "confidence",
+				"parameterType": "String",
+				"defaultValue": "0.95",
+				"desc": "预标注分类阈值"
+			},
+			{
+				"parameterName": "dicturl",
+				"parameterType": "dictchoose",
+				"defaultValue": "",
+				"desc": "字典文件"
+			}
+		]
+	}
+}
