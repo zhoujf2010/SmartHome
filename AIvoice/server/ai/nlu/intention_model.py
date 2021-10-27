@@ -114,7 +114,7 @@ class SimpleNluInterpreter(NaturalLanguageInterpreter):
 class BertNluInterpreter(NaturalLanguageInterpreter):
     def __init__(self, word_slot_model=None):
         super().__init__(word_slot_model)
-        from nlu.bert_sim.extract_feature import BertVector
+        from ai.nlu.bert_sim.extract_feature import BertVector
         self.model = BertVector()
 
     def train(self, data):

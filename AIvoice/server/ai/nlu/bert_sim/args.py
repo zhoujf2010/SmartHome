@@ -26,4 +26,4 @@ layer_indexes = [-2]
 max_seq_len = 50
 
 # graph名字
-graph_file = 'graph'
+graph_file = 'gen/graph'

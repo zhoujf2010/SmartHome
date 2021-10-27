@@ -3,12 +3,12 @@ Created on 2020年1月31日
 
 @author: zjf
 '''
-import speech_recognition as sr
-from aip import AipSpeech
-from playsound import playsound
+# import speech_recognition as sr
+# from aip import AipSpeech
+# from playsound import playsound
 import os
 import numpy as np
-import pyaudio
+# import pyaudio
 import audioop
 import collections
 import math

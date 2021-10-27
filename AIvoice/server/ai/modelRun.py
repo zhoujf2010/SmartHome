@@ -28,7 +28,7 @@ def init(args):
 
 
 def train(args):
-    from prepare_data import PrepareData
+    from ai.prepare_data import PrepareData
     import shutil
     commonUtil.setRootPath(os.path.split(os.path.realpath(__file__))[0])
     logger = elog()
@@ -111,7 +111,7 @@ def deploy(args):
     import shutil
     from flask import Flask
     from flask_cors import CORS
-    from rasa_server import RASAServer
+    from ai.rasa_server import RASAServer
     commonUtil.setRootPath(os.path.split(os.path.realpath(__file__))[0])
     logger = elog()
     os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"  # Only needed on OSX
@@ -159,7 +159,7 @@ def main(tp):
 
 
 if __name__ == "__main__":
-    tpe = "3"# input("请选择对应的模式（1：训练模式，2：发布模式）:")
+    tpe = "1"# input("请选择对应的模式（1：训练模式，2：发布模式）:")
     # while tpe != "1" and tpe != "2":
     #     tpe = input("输入错误请重新输入对应的模式（1：训练模式，2：发布模式）:")
     # print(type(tp))

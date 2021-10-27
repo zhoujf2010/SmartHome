@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from epointml.utils import DbPoolUtil
-from nlu.word_slot_model import *
-from nlu.intention_model import *
+from ai.nlu.word_slot_model import *
+from ai.nlu.intention_model import *
 
 
 def get_all_classes(model):
@@ -32,15 +32,34 @@ class PrepareData(object):
         self.args = args
 
     def intent_train_data(self):
-        sql = """select {0}, labeltype from {1} where ifnull({0},'')!='' and ifnull(labeltype,'')!=''""".format(
-            self.args["content"], self.args["table"])
-        data = self.__con.execute_query(sql, dict_mark=True)
+        # sql = """select {0}, labeltype from {1} where ifnull({0},'')!='' and ifnull(labeltype,'')!=''""".format(
+        #     self.args["content"], self.args["table"])
+        # data = self.__con.execute_query(sql, dict_mark=True)
+        # f = open('./data/intent.json', 'w')
+        # f.write(json.dumps(data,ensure_ascii=False))
+        # f.close()
+
+        f = open('./data/intent.json','r')
+        data = f.read()
+        data = json.loads(data)
+        f.close()
+
         self.intent_model.train(data)
 
     def word_slot_train_data(self):
-        sql = """select {0}, target from {1} where ifnull({0},'')!='' and ifnull(target,'')!=''""".format(
-            self.args["content"], self.args["table"])
-        data = self.__con.execute_query(sql, dict_mark=True)
+        # sql = """select {0}, target from {1} where ifnull({0},'')!='' and ifnull(target,'')!=''""".format(
+        #     self.args["content"], self.args["table"])
+        # data = self.__con.execute_query(sql, dict_mark=True)
+        
+        # f = open('./data/slot.json', 'w')
+        # f.write(json.dumps(data,ensure_ascii=False))
+        # f.close()
+
+        f = open('./data/slot.json','r')
+        data = f.read()
+        data = json.loads(data)
+        f.close()
+
         self.word_slot_model.train(data)
 
 

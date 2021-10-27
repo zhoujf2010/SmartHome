@@ -1,0 +1,8 @@
+[{
+	"content": "搜索国泰新点工程",
+	"target": "[{\"start\":2,\"end\":6,\"value\":\"国泰新点\",\"length\":4,\"entity\":\"1\"}]"
+}, {
+	"content": "打开东门摄像头",
+	"target": "[{\"start\":2,\"end\":4,\"value\":\"东门\",\"length\":2,\"entity\":\"0\"}]"
+}]
+

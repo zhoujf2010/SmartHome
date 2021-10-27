@@ -67,7 +67,12 @@ async def main():
     # _stopped = asyncio.Event()
     # await _stopped.wait()
 
+import ai.modelRun as air
+
+
+
 if __name__ == '__main__':
     logger.info("hello")
-    signal.signal(signal.SIGINT, signal_handler)
-    asyncio.run(main())
+    # signal.signal(signal.SIGINT, signal_handler)
+    # asyncio.run(main())
+    air.main("3")

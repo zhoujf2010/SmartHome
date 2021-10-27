@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from prepare_data import *
+from ai.prepare_data import *
 import json
 from flask import request
 import traceback
