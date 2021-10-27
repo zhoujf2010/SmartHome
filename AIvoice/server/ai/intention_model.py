@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
-from epointml.utils import elog
 import jieba
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 import os
 import datetime
 import pickle
+import logging
 
 
 class NaturalLanguageInterpreter(object):
     def __init__(self, word_slot_model):
-        self.logger = elog()
+        self.logger =  logging.getLogger(__name__)
         self.question = []
         self.answer = []
         self.ner = word_slot_model
@@ -114,7 +114,7 @@ class SimpleNluInterpreter(NaturalLanguageInterpreter):
 class BertNluInterpreter(NaturalLanguageInterpreter):
     def __init__(self, word_slot_model=None):
         super().__init__(word_slot_model)
-        from ai.nlu.bert_sim.extract_feature import BertVector
+        from ai.bert_sim.extract_feature import BertVector
         self.model = BertVector()
 
     def train(self, data):

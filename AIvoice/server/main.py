@@ -4,6 +4,7 @@
 
 
 from __future__ import annotations
+import imp
 import logging
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
@@ -11,6 +12,7 @@ import asyncio
 import signal
 from myVoice import myVoice
 from hassclient import HomeAssistantClient
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -67,12 +69,28 @@ async def main():
     # _stopped = asyncio.Event()
     # await _stopped.wait()
 
-import ai.modelRun as air
-
+# import ai.AIModel.AIModel as AIModel
+from ai.AIModel import AIModel
 
 
 if __name__ == '__main__':
     logger.info("hello")
     # signal.signal(signal.SIGINT, signal_handler)
     # asyncio.run(main())
-    air.main("3")
+
+    rootPath = os.path.split(os.path.realpath(__file__))[0]
+    mode = AIModel(rootPath)
+    mode.train()
+    logger.info("训练完成")
+
+    # mode.loadModel()
+    # from flask import Flask
+    # app = Flask(__name__)
+    # from flask_cors import CORS
+    # # 跨域设置
+    # CORS(app)
+    # # 绑定路由
+    # app.add_url_rule("/nlu/predict", None, getattr(mode, "predict"),methods=["POST"])
+
+    # # 启动服务
+    # app.run(host='0.0.0.0', port=9042, debug=False)

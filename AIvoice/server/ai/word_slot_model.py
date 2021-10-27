@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
 from collections import defaultdict
 import jieba.posseg as pseg
-from epointml.utils import elog
 import json
 import os
 import pickle
 import re
-
+import logging
 
 class WordSlot(object):
     def __init__(self):
-        self.logger = elog()
+        self.logger =  logging.getLogger(__name__)
         self.re_json = None
         self.dict_data_path = "gen/data/dict.txt"
 

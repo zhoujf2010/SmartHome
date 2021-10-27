@@ -1,8 +1,9 @@
+import imp
 import json
 import logging
 from termcolor import colored
-from ai.nlu.bert_sim import modeling
-from ai.nlu.bert_sim import args
+from ai.bert_sim import modeling
+from ai.bert_sim import args
 import tensorflow as tf
 import os
 
