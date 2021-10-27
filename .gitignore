@@ -16,3 +16,5 @@
 *.pyc
 /AIvoice/server/ai/gen
 /AIvoice/server/ai/logs
+/AIvoice/server/ai/graph
+/AIvoice/server/ai/nlu/bert_sim/report.txt

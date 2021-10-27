@@ -58,8 +58,8 @@ class BertVector:
         from tensorflow.python.estimator.model_fn import EstimatorSpec
 
         def model_fn(features, labels, mode, params):
-            with tf.gfile.GFile(self.graph_path, 'rb') as f:
-                graph_def = tf.GraphDef()
+            with tf.io.gfile.GFile(self.graph_path, 'rb') as f:
+                graph_def = tf.compat.v1.GraphDef()
                 graph_def.ParseFromString(f.read())
 
             input_names = ['input_ids', 'input_mask', 'input_type_ids']
@@ -72,11 +72,11 @@ class BertVector:
                 'encodes': output[0]
             })
 
-        config = tf.ConfigProto()
+        config = tf.compat.v1.ConfigProto()
         config.gpu_options.allow_growth = True
         config.gpu_options.per_process_gpu_memory_fraction = self.gpu_memory_fraction
         config.log_device_placement = False
-        config.graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.ON_1
+        config.graph_options.optimizer_options.global_jit_level = tf.compat.v1.OptimizerOptions.ON_1
 
         return Estimator(model_fn=model_fn, config=RunConfig(session_config=config),
                          params={'batch_size': self.batch_size}, model_dir='../tmp')
@@ -186,17 +186,17 @@ class BertVector:
                 if mode != tf.estimator.ModeKeys.PREDICT:
                     raise ValueError("Only PREDICT modes are supported: %s" % (mode))
 
-                tvars = tf.trainable_variables()
+                tvars = tf.compat.v1.trainable_variables()
 
                 (assignment_map, initialized_variable_names) = modeling.get_assignment_map_from_checkpoint(tvars,
                                                                                                            init_checkpoint)
 
-                tf.logging.info("**** Trainable Variables ****")
+                tf.compat.v1.logging.info("**** Trainable Variables ****")
                 for var in tvars:
                     init_string = ""
                     if var.name in initialized_variable_names:
                         init_string = ", *INIT_FROM_CKPT*"
-                    tf.logging.info("  name = %s, shape = %s%s", var.name, var.shape,
+                    tf.compat.v1.logging.info("  name = %s, shape = %s%s", var.name, var.shape,
                                     init_string)
 
                 all_layers = model.get_all_encoder_layers()
@@ -273,13 +273,13 @@ class BertVector:
             assert len(input_type_ids) == seq_length
 
             if ex_index < 5:
-                tf.logging.info("*** Example ***")
-                tf.logging.info("unique_id: %s" % (example.unique_id))
-                tf.logging.info("tokens: %s" % " ".join(
+                tf.compat.v1.logging.info("*** Example ***")
+                tf.compat.v1.logging.info("unique_id: %s" % (example.unique_id))
+                tf.compat.v1.logging.info("tokens: %s" % " ".join(
                     [tokenization.printable_text(x) for x in tokens]))
-                tf.logging.info("input_ids: %s" % " ".join([str(x) for x in input_ids]))
-                tf.logging.info("input_mask: %s" % " ".join([str(x) for x in input_mask]))
-                tf.logging.info(
+                tf.compat.v1.logging.info("input_ids: %s" % " ".join([str(x) for x in input_ids]))
+                tf.compat.v1.logging.info("input_mask: %s" % " ".join([str(x) for x in input_mask]))
+                tf.compat.v1.logging.info(
                     "input_type_ids: %s" % " ".join([str(x) for x in input_type_ids]))
 
             yield InputFeatures(

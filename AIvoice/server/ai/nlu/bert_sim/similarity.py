@@ -596,7 +596,7 @@ class BertSim:
                 "was only trained up to sequence length %d" %
                 (args.max_seq_len, bert_config.max_position_embeddings))
 
-        tf.gfile.MakeDirs(args.output_dir)
+        tf.io.gfile.MakeDirs(args.output_dir)
 
         label_list = self.processor.get_labels()
 
@@ -648,7 +648,7 @@ class BertSim:
         result = estimator.evaluate(input_fn=eval_input_fn, steps=None)
 
         output_eval_file = os.path.join(args.output_dir, "eval_results.txt")
-        with tf.gfile.GFile(output_eval_file, "w") as writer:
+        with tf.io.gfile.GFile(output_eval_file, "w") as writer:
             tf.logging.info("***** Eval results *****")
             for key in sorted(result.keys()):
                 tf.logging.info("  %s = %s", key, str(result[key]))

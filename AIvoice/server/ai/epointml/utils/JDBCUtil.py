@@ -8,7 +8,7 @@ Description: DB工具类
 """
 import importlib
 
-# from DBUtils.PooledDB import PooledDB
+from DBUtils.PooledDB import PooledDB
 
 from .PropertiesUtil import prop
 from .logger import elog

@@ -35,7 +35,7 @@ class RASAServer(object):
         text: 待比对字符串
         :return: 符合条件的相似数据
         """
-        json_data = json.loads(request.data, encoding='utf-8')
+        json_data = json.loads(request.data)#, encoding='utf-8')
         try:
             if "text" in json_data:
                 ret = {'code': '1', 'result': self.intent_model.parse(json_data["text"])}

@@ -423,7 +423,7 @@ def train(train_cls_args):
             "was only trained up to sequence length %d" %
             (train_cls_args["max_seq_length"], bert_config.max_position_embeddings))
 
-    tf.gfile.MakeDirs(train_cls_args["output_dir"])
+    tf.io.gfile.MakeDirs(train_cls_args["output_dir"])
 
     task_name = train_cls_args["task_name"].lower()
 
