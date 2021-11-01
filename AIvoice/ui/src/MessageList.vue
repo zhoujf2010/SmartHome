@@ -6,13 +6,11 @@
       :max-rows="maxRows" 
       :intentionTypes="_getintentionTypes(messageItem.calltype)" 
       :editable="messageEditable" 
-      :removable="messageRemovable" 
+      :removable="false" 
       :isFirst="index == 0" 
       :isLast="index == list.length - 1" 
       :typeList="messageTypeList"
       @remove-message="removeItem(index, messageItem)" 
-      @move-up="move(index, -1)" 
-      @move-down="move(index, 0)" 
       @clear-entity="clearEntity(messageItem)" 
       @on-edit="handleMessageEdit(messageItem, index)" 
       @on-refresh="handleMessageRefresh(messageItem, index)"
@@ -48,7 +46,7 @@ export default {
       messageRemovable: true,
       // 已经删除的消息的集合
       removedItems: [],
-      maxRows: 5,
+      maxRows: 1,
       // 消息类型的列表
       messageTypeList: []
     };
@@ -137,19 +135,6 @@ export default {
     },
     _getintentionTypes(type) {
       return this.intentionTypes[type] || [];
-    },
-    /**
-     * 交换排序移动
-     * @param {Number} index 待排序元素索引
-     * @param {enum} direction 移动方向 上移为-1 下移0；
-     */
-    move(index, direction) {
-      const startIdx = index + direction;
-      const its = this.list.slice(startIdx, startIdx + 2);
-      if (its.length < 2) {
-        return;
-      }
-      this.list.splice(startIdx, 2, its[1], its[0]);
     },
     handleMessageEdit(msg, index) {
       var prevItem = this.list[index - 1];

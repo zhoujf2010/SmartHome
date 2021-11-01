@@ -8,10 +8,10 @@ import jinja2
 
 async def async_setup(app,rootpath):
     #注册静态资源
-    for path in ["js","css","img","static"]:
+    for path in ["js","css","img","static","fonts","app.js"]:
         app.register_static_path(f"/{path}", rootpath +"/" + path)
 
-    app.register_static_path( "/authorize", rootpath +"/" + "authorize.html")
+    app.register_static_path( "/index", rootpath +"/" + "index.html")
 
     app.register_view(IndexView(rootpath, app))
 
@@ -78,7 +78,7 @@ class IndexView(web_urldispatcher.AbstractResource):
         """Get template."""
         tpl = self._template_cache
         if tpl is None:
-            with open(self.rootpath + "/index.html") as file:
+            with open(self.rootpath + "/index.html",encoding="utf-8") as file:
                 tpl = jinja2.Template(file.read())
             # Cache template if not running from repository
             # self._template_cache = tpl

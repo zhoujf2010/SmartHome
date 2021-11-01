@@ -13,6 +13,10 @@ import signal
 from myVoice import myVoice
 from hassclient import HomeAssistantClient
 import os
+_LOGGER = logging.getLogger(__name__)
+from webFrame.webapp import webapp
+import frontpage
+from backend import DataView
 
 logger = logging.getLogger(__name__)
 
@@ -73,15 +77,32 @@ async def main():
 from ai.AIModel import AIModel
 
 
+
+async def main2():
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    _LOGGER.info("启动服务，当前路径：" + dir_path)
+    rootpath = dir_path + "/webpage"
+
+    app = webapp(82,"test")
+
+    await app.register_view(DataView(app))
+    await frontpage.async_setup(app,rootpath)
+
+    await app.start()
+    
+    _stopped = asyncio.Event()
+    await _stopped.wait()
+
+
 if __name__ == '__main__':
     logger.info("hello")
     # signal.signal(signal.SIGINT, signal_handler)
-    # asyncio.run(main())
+    asyncio.run(main2())
 
-    rootPath = os.path.split(os.path.realpath(__file__))[0]
-    mode = AIModel(rootPath)
-    mode.train()
-    logger.info("训练完成")
+    # rootPath = os.path.split(os.path.realpath(__file__))[0]
+    # mode = AIModel(rootPath)
+    # mode.train()
+    # logger.info("训练完成")
 
     # mode.loadModel()
     # from flask import Flask

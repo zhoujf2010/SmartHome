@@ -1,53 +1,9 @@
 (function() {
-  var intentions = {
-    H: [
-      {
-        id: "H1",
-        text: "H类型1"
-      },
-      {
-        id: "H2",
-        text: "H类型2"
-      },
-      {
-        id: "H3",
-        text: "H类型3"
-      }
-    ],
-    Q: [
-      {
-        id: "Q1",
-        text: "疑问类型疑问类型疑问类型疑问类型1"
-      },
-      {
-        id: "Q2",
-        text: "疑问类型2"
-      },
-      {
-        id: "Q3",
-        text: "疑问类型3"
-      }
-    ],
-    A: [
-      {
-        id: "A1",
-        text: "回答类型1"
-      },
-      {
-        id: "A2",
-        text: "回答类型2"
-      },
-      {
-        id: "A3",
-        text: "回答类型3"
-      }
-    ]
-  };
-
+  
   var entityTypes = [
     {
       id: "time",
-      text: "时间",
+      text: "时间xx",
       bg: "#3391e5"
     },
     {
@@ -76,7 +32,7 @@
   var list = Mock.mock({
     "list|6-20": [
       {
-        message: "@csentence(200,2000)"
+        message: "@csentence(2,20)"
       }
     ]
   }).list;
@@ -106,13 +62,12 @@
   });
 
   window.mockData = {
-    intentions: intentions,
     entityTypes: entityTypes,
     messages: list,
     messageTypeList: [
       {
         id: "类型1",
-        text: "类型1"
+        text: "类型1xxxx"
       },
       {
         id: "类型2",
