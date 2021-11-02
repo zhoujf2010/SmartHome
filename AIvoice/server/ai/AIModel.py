@@ -4,9 +4,12 @@ from ai.intention_model import *
 from flask import request
 import traceback
 import shutil
+import asyncio
+from webFrame.baseview import BaseView, route
 
-import tensorflow.compat.v1 as tf
-tf.disable_v2_behavior()
+logger = logging.getLogger(__name__)
+
+
 
 def get_all_classes(model):
     """
@@ -19,12 +22,25 @@ def get_all_classes(model):
         # get_all_classes(subclass)
     return all_subclasses
 
-class AIModel():
-    def __init__(self,rootPath) -> None:
+    
+async def async_setup(app, rootPath):
+    view = AIModel(app,rootPath)
+    app.register_view(view)
+    loop = asyncio.get_running_loop()
+    loop.run_in_executor(None, view.loadModel)
+
+
+class AIModel(BaseView):
+    name = "AIView"
+
+    def __init__(self,app,rootPath) -> None:
+        import tensorflow.compat.v1 as tf
+        tf.disable_v2_behavior()
         self.rootPath = rootPath
+        self.app = app
 
-    def train(self):
-
+    @route("/train", methods=['POST'])
+    async def train(self, request):
         if os.path.exists("gen/graph"):
             os.remove("gen/graph")
         if os.path.exists("gen/models/intent_model"):
@@ -36,16 +52,16 @@ class AIModel():
 
         
         #意图训练
-        self.word_slot_model = eval(get_all_classes(WordSlot)["JieBa"])()
-        f = open('./data/intent.json','r')
+        self.intent_model = eval(get_all_classes(NaturalLanguageInterpreter)["Bert"])()
+        f = open('./data/intent.json','r',encoding="utf-8")
         data = f.read()
         data = json.loads(data)
         f.close()
         self.intent_model.train(data)
 
         #词槽训练
-        self.intent_model = eval(get_all_classes(NaturalLanguageInterpreter)["Bert"])()
-        f = open('./data/slot.json','r')
+        self.word_slot_model = eval(get_all_classes(WordSlot)["JieBa"])()
+        f = open('./data/slot.json','r',encoding="utf-8")
         data = f.read()
         data = json.loads(data)
         f.close()
@@ -53,16 +69,20 @@ class AIModel():
         self.word_slot_model.train(data)
 
     def loadModel(self):
-
+        logger.info("模型开始加载")
         self.word_slot_model = eval(get_all_classes(WordSlot)["JieBa"])()
         self.word_slot_model.init_model()
         self.intent_model = eval(get_all_classes(NaturalLanguageInterpreter)["Bert"])(
             self.word_slot_model)
         self.intent_model.init_model()
+        logger.info("模型加载完成")
 
+    def doPredict(self,text):
+        return self.intent_model.parse(text)
 
-    def predict(self):
-        json_data = json.loads(request.data)#, encoding='utf-8')
+    @route("/api/predict", methods=['POST'])
+    async def predict(self, request):
+        json_data = await request.json()
         try:
             if "text" in json_data:
                 ret = {'code': '1', 'result': self.intent_model.parse(json_data["text"])}

@@ -4,27 +4,31 @@
 
 
 from __future__ import annotations
+import ai.AIModel as AIModel
+from backend import DataView
+import frontpage
+from webFrame.webapp import webapp
+import os
+from hassclient import HomeAssistantClient
+from myVoice import myVoice
+import myVoice as vvvv
+import signal
+import asyncio
 import imp
 import logging
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
-import asyncio
-import signal
-from myVoice import myVoice
-from hassclient import HomeAssistantClient
-import os
 _LOGGER = logging.getLogger(__name__)
-from webFrame.webapp import webapp
-import frontpage
-from backend import DataView
 
 logger = logging.getLogger(__name__)
 
 interrupted = False
 
+
 def signal_handler(signal, frame):
     global interrupted
     interrupted = True
+
 
 def interrupt_callback():
     global interrupted
@@ -39,12 +43,12 @@ async def detect(v):
     print("OK")
 
 
-async def rcbk(v,tmp):
+async def rcbk(v, tmp):
     ret = v.getVoice(tmp)
     print("--->", ret)
-    
+
     if "开灯" in ret:
-        dt = {"type":"call_service","domain":"switch","service":"turn_on","service_data":{"entity_id":"switch.testled"},"id":5}
+        dt = {"type": "call_service", "domain": "switch", "service": "turn_on", "service_data": {"entity_id": "switch.testled"}, "id": 5}
         await v.hassclient.send_command(dt)
     if "关灯" in ret or "谁" in ret:
         dt = {"type": "call_service", "domain": "switch", "service": "turn_off", "service_data": {"entity_id": "switch.testled"}, "id": 5}
@@ -55,7 +59,8 @@ async def rcbk(v,tmp):
 
 url = "http://192.168.3.168:8123"
 token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJlMzJkYmVjMTI4MTk0ZDAxODk1MDY2YTA0MWQ1NDNjNCIsImlhdCI6MTYzMDExODgyNCwiZXhwIjoxOTQ1NDc4ODI0fQ.aBRaWzvHyKixnX1MiCu3uqZ4W2De44n6TynsSjUY1DY"
-rooturlpath ="lovelace-wx"
+rooturlpath = "lovelace-wx"
+
 
 async def main():
     hassclient = HomeAssistantClient(url, token)
@@ -68,14 +73,12 @@ async def main():
     model = "./snowboy/小度.pmdl"
 
     await v.runcheck(model, detected_callback=detect, sensitivity="0.6",
-               audio_recorder_callback=rcbk, interrupt_check=interrupt_callback)
+                     audio_recorder_callback=rcbk, interrupt_check=interrupt_callback)
 
     # _stopped = asyncio.Event()
     # await _stopped.wait()
 
 # import ai.AIModel.AIModel as AIModel
-from ai.AIModel import AIModel
-
 
 
 async def main2():
@@ -83,35 +86,21 @@ async def main2():
     _LOGGER.info("启动服务，当前路径：" + dir_path)
     rootpath = dir_path + "/webpage"
 
-    app = webapp(82,"test")
+    app = webapp(82, "test")
 
-    await app.register_view(DataView(app))
-    await frontpage.async_setup(app,rootpath)
+    app.register_view(DataView(app))
+    #await AIModel.async_setup(app, dir_path)
+    await frontpage.async_setup(app, rootpath)
+    await vvvv.async_setup(app)
 
     await app.start()
-    
+
     _stopped = asyncio.Event()
     await _stopped.wait()
+    await app.stop()
 
 
 if __name__ == '__main__':
     logger.info("hello")
     # signal.signal(signal.SIGINT, signal_handler)
     asyncio.run(main2())
-
-    # rootPath = os.path.split(os.path.realpath(__file__))[0]
-    # mode = AIModel(rootPath)
-    # mode.train()
-    # logger.info("训练完成")
-
-    # mode.loadModel()
-    # from flask import Flask
-    # app = Flask(__name__)
-    # from flask_cors import CORS
-    # # 跨域设置
-    # CORS(app)
-    # # 绑定路由
-    # app.add_url_rule("/nlu/predict", None, getattr(mode, "predict"),methods=["POST"])
-
-    # # 启动服务
-    # app.run(host='0.0.0.0', port=9042, debug=False)

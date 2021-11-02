@@ -83,7 +83,7 @@ class DataView(BaseView):
         fo = open("./data/slot.json", "w", encoding="utf-8")
         fo.write(json.dumps(slot, indent=4, ensure_ascii=False))
 
-        print(json.dumps(data, indent=4, ensure_ascii=False))
+        # print(json.dumps(data, indent=4, ensure_ascii=False))
 
         ret = {"result": "OK"}
         return self.json_result(ret)

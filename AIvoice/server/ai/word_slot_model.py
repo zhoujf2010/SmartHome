@@ -41,7 +41,7 @@ class JieBaPos(WordSlot):
                     my_dict[str(line[0])] = "{0} {1}".format(str(line[1]), str(line[2]))
         for d in data:
             if d["target"]:
-                slot_json = json.loads(d["target"])
+                slot_json = d["target"]
                 for word_slot in slot_json:
                     print(word_slot)
                     word = word_slot["value"]

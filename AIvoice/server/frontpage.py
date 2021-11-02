@@ -12,8 +12,9 @@ async def async_setup(app,rootpath):
         app.register_static_path(f"/{path}", rootpath +"/" + path)
 
     app.register_static_path( "/index", rootpath +"/" + "index.html")
+    app.register_static_path( "/demo", rootpath +"/" + "demo.html")
 
-    app.register_view(IndexView(rootpath, app))
+    # app.register_view(IndexView(rootpath, app))
 
 
 class IndexView(web_urldispatcher.AbstractResource):

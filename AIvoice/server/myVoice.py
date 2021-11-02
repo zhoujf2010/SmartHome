@@ -32,6 +32,49 @@ import asyncio
 logger = logging.getLogger("myVoice")
 
 
+async def async_setup(app):
+    v = myVoice()
+    # v.playVoice("你好,准备接受你的指令")
+    
+    model = "./snowboy/小度.pmdl"
+
+    await v.runcheck(model, detected_callback=detect, sensitivity="0.6",
+                     audio_recorder_callback=rcbk, interrupt_check=interrupt_callback)
+    logger.info("语音监听加载完成")
+
+
+async def detect(v):
+    v.playVoice("在呢")
+    # print("listing...")
+    # vl = myVoice()
+    # print(vl.getVoice())
+    print("OK")
+
+
+
+def signal_handler(signal, frame):
+    global interrupted
+    interrupted = True
+
+
+def interrupt_callback():
+    global interrupted
+    return interrupted
+
+async def rcbk(v, tmp):
+    ret = v.getVoice(tmp)
+    print("--->", ret)
+
+    # if "开灯" in ret:
+    #     dt = {"type": "call_service", "domain": "switch", "service": "turn_on", "service_data": {"entity_id": "switch.testled"}, "id": 5}
+    #     await v.hassclient.send_command(dt)
+    # if "关灯" in ret or "谁" in ret:
+    #     dt = {"type": "call_service", "domain": "switch", "service": "turn_off", "service_data": {"entity_id": "switch.testled"}, "id": 5}
+    #     await v.hassclient.send_command(dt)
+
+    v.playVoice("处理完成")
+
+
 class myVoice(object):
 
     def __init__(self):
@@ -39,7 +82,7 @@ class myVoice(object):
         self.CHUNK = 2048  # RATE / number of updates per second
         self.SAMPLE_WIDTH = 2
         self.seconds_per_buffer = float(self.CHUNK) / self.SAMPLE_RATE
-        self.energy_threshold = self.__calcBackVoice()
+        # self.energy_threshold = self.__calcBackVoice()
         self.stream = None
 
     def getframerate(self):

@@ -107,7 +107,7 @@
 	}  
     var staticserverUrl = getParam('address');
 	if (staticserverUrl=='' || staticserverUrl == null)
-		staticserverUrl ="http://localhost:9042/nlu";
+		staticserverUrl ="http://localhost:82/test/api";
 	staticserverUrl = staticserverUrl +"/predict";
 	document.getElementById('interface').value = staticserverUrl;
 	ace.edit('ajaxParams').setValue(js_beautify('{"text": "搜索国泰新点工程"}'),1);
