@@ -1,42 +1,26 @@
 [
     {
-        "content": "打开指挥中心",
-        "labeltype": "01"
-    },
-    {
-        "content": "打开有基坑视频点位的工程列表",
-        "labeltype": "01"
-    },
-    {
-        "content": "打开监测预警",
-        "labeltype": "01-01"
-    },
-    {
-        "content": "返回首页",
-        "labeltype": "01-02"
-    },
-    {
-        "content": "打开工程列表",
-        "labeltype": "02"
-    },
-    {
-        "content": "搜索国泰新点工程",
+        "content": "打开中央一台",
         "labeltype": "03"
     },
     {
-        "content": "打开视频监控",
-        "labeltype": "02-02"
+        "content": "打开中央二台",
+        "labeltype": "03"
+    },
+    {
+        "content": "开房间灯",
+        "labeltype": "02"
+    },
+    {
+        "content": "开厨房灯",
+        "labeltype": "02"
     },
     {
         "content": "打开东门摄像头",
         "labeltype": "02-03"
     },
     {
-        "content": "进入莱山区",
+        "content": "开中央一台",
         "labeltype": "03"
-    },
-    {
-        "content": "今天天气如何",
-        "labeltype": "04"
     }
 ]

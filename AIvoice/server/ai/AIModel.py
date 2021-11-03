@@ -26,8 +26,29 @@ def get_all_classes(model):
 async def async_setup(app, rootPath):
     view = AIModel(app,rootPath)
     app.register_view(view)
-    loop = asyncio.get_running_loop()
-    loop.run_in_executor(None, view.loadModel)
+    app.loop.run_in_executor(None, view.loadModel)
+
+    async def dataReceive(eventtype, data):  #收到角度变换数据
+        cmd = view.doPredict(data)
+
+        intenttype = cmd["intent"]["name"]
+        intentname = view.getIntentTypes()[intenttype]
+        dt = [cmd["text"],intenttype,intentname]
+        for item in cmd["entities"]:
+            entitytype = item["entity"]
+            entityname = view.getEntityTypes()[entitytype]
+            dt.append([entitytype,entityname])
+
+        return await app.eventBus.async_fire("cmd",dt)
+
+    app.eventBus.async_listen("oracmd", dataReceive)
+
+    def onconfigchange(eventtype, data):
+        logger.info("收到配置变化")
+        view.clearCache()
+
+    app.eventBus.async_listen("configchange", onconfigchange)
+    
 
 
 class AIModel(BaseView):
@@ -38,6 +59,38 @@ class AIModel(BaseView):
         tf.disable_v2_behavior()
         self.rootPath = rootPath
         self.app = app
+
+    def getEntityTypes(self):
+        #获取实体类别表
+        if not hasattr(self,"EntityTypes"):
+            f = open('./data/entityTypes.json','r',encoding="utf-8")
+            data = f.read()
+            data = json.loads(data)
+            f.close()
+            EntityTypes = {}
+            for item in data:
+                EntityTypes[item["id"]] = item["text"]
+            self.EntityTypes = EntityTypes
+        return self.EntityTypes
+
+    def getIntentTypes(self):
+        #获取意图表
+        if not hasattr(self,"IntentTypes"):
+            f = open('./data/intentTypes.json','r',encoding="utf-8")
+            data = f.read()
+            data = json.loads(data)
+            f.close()
+            IntentTypes = {}
+            for item in data:
+                IntentTypes[item["id"]] = item["text"]
+            self.IntentTypes = IntentTypes
+        return self.IntentTypes
+
+    def clearCache(self):
+        if hasattr(self,"IntentTypes"):
+            del self.IntentTypes
+        if hasattr(self,"EntityTypes"):
+            del self.EntityTypes
 
     @route("/train", methods=['POST'])
     async def train(self, request):
@@ -67,6 +120,7 @@ class AIModel(BaseView):
         f.close()
 
         self.word_slot_model.train(data)
+        logger.info("训练完成")
 
     def loadModel(self):
         logger.info("模型开始加载")
@@ -90,7 +144,7 @@ class AIModel(BaseView):
                 ret = {"code": '0', "result": "存在异常，请传入正确参数"}
         except Exception as e:
             ret = {"code": "0", "result": "存在异常" + str(e)}
-            self.logger.error("异常信息:")
-            self.logger.error(traceback.print_exc())
+            logger.error("异常信息:")
+            logger.error(traceback.print_exc())
         return json.dumps(ret, ensure_ascii=False)
     

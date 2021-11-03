@@ -23,6 +23,33 @@ from aiohttp import (
 from typing import Optional
 
 
+url = "http://192.168.3.168:8123"
+token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJlMzJkYmVjMTI4MTk0ZDAxODk1MDY2YTA0MWQ1NDNjNCIsImlhdCI6MTYzMDExODgyNCwiZXhwIjoxOTQ1NDc4ODI0fQ.aBRaWzvHyKixnX1MiCu3uqZ4W2De44n6TynsSjUY1DY"
+rooturlpath = "lovelace-wx"
+
+
+async def async_setup(app):
+    
+    def dataReceive(eventtype, data):  #收到角度变换数据
+        print("from cmd:",data)
+
+        
+    # if "开灯" in ret:
+    #     dt = {"type": "call_service", "domain": "switch", "service": "turn_on", "service_data": {"entity_id": "switch.testled"}, "id": 5}
+    #     await v.hassclient.send_command(dt)
+    # if "关灯" in ret or "谁" in ret:
+    #     dt = {"type": "call_service", "domain": "switch", "service": "turn_off", "service_data": {"entity_id": "switch.testled"}, "id": 5}
+    #     await v.hassclient.send_command(dt)
+
+    
+        return "OK-" + str(data)
+
+    app.eventBus.async_listen("cmd", dataReceive)
+
+
+
+
+
 class BaseHassClientError(Exception):
     """Base Hass Client exception."""
 

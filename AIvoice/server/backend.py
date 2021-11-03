@@ -25,15 +25,37 @@ class DataView(BaseView):
     async def getentityTypes(self, request):
         """实体类型"""
         fo = open("./data/entityTypes.json", "r", encoding="utf-8")
-        data = json.loads(fo.read())
-        return self.json_result(data)
+        data = fo.read()
+        fo.close()
+        return self.result(data)
 
-    @route("/api/messageTypes")
-    async def getMessageTypes(self, request):
+    @route("/api/entityTypes" , methods=['POST'])
+    async def postentityTypes(self, request):
+        """实体类型"""
+        data = await request.text()
+        fo = open("./data/entityTypes.json", "w", encoding="utf-8")
+        fo.write(data)
+        fo.close()
+        return self.result("OK")
+
+    @route("/api/intentTypes")
+    async def getintentTypes(self, request):
         """意图类型列表"""
         fo = open("./data/intentTypes.json", "r", encoding="utf-8")
-        data = json.loads(fo.read())
-        return self.json_result(data)
+        data = fo.read()
+        fo.close()
+        self.app.eventBus.async_fire("configchange",None)
+        return self.result(data)
+
+    @route("/api/intentTypes" , methods=['POST'])
+    async def postintentTypes(self, request):
+        """意图类型列表"""
+        data = await request.text()
+        fo = open("./data/intentTypes.json", "w", encoding="utf-8")
+        fo.write(data)
+        fo.close()
+        self.app.eventBus.async_fire("configchange",None)
+        return self.result("OK")
 
     @route("/api/messages")
     async def getMessages(self, request):

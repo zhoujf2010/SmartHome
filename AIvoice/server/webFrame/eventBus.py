@@ -49,7 +49,7 @@ class EventBus():
 
         return remove_listener
 
-    def async_fire(self, event_type: str, event_data: Any | None = None) -> None:
+    def async_fire(self, event_type: str, event_data: Any | None = None) :
         """Fire an event.
 
         This method must be run in the event loop.
@@ -59,5 +59,15 @@ class EventBus():
         if not listeners:
             return
 
+        ret =[]
+
         for job in listeners:
-            self.loop.run_in_executor(None, job, event_type, event_data)
+            if asyncio.iscoroutinefunction(job):
+                future = self.loop.create_task(job(event_type, event_data))
+            else:
+                future = self.loop.run_in_executor(None, job, event_type, event_data)
+            ret.append(future)
+        if len(ret) >1:
+            return ret
+        else:
+            return ret[0]

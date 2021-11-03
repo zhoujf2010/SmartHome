@@ -19,6 +19,12 @@ import subprocess
 import time
 import logging
 import asyncio
+from webFrame.baseview import BaseView, route
+import urllib.parse
+from urllib.parse import urlparse, parse_qs
+
+
+
 
 # pip install SpeechRecognition
 # pip install PocketSphinx
@@ -33,15 +39,37 @@ logger = logging.getLogger("myVoice")
 
 
 async def async_setup(app):
-    v = myVoice()
-    # v.playVoice("你好,准备接受你的指令")
+    app.register_view(TestView(app))
+
+    # v = myVoice()
+    # # v.playVoice("你好,准备接受你的指令")
     
-    model = "./snowboy/小度.pmdl"
+    # model = "./snowboy/小度.pmdl"
 
-    await v.runcheck(model, detected_callback=detect, sensitivity="0.6",
-                     audio_recorder_callback=rcbk, interrupt_check=interrupt_callback)
-    logger.info("语音监听加载完成")
+    # await v.runcheck(model, detected_callback=detect, sensitivity="0.6",
+    #                  audio_recorder_callback=rcbk, interrupt_check=interrupt_callback)
+    # logger.info("语音监听加载完成")
 
+
+class TestView(BaseView):
+    """View to issue or revoke tokens."""
+
+    url = "/test"
+    name = "api:auth:token"
+    requires_auth = False
+    cors_allowed = True
+
+    def __init__(self, app):
+        """Initialize the token view."""
+        self.app = app
+
+    async def get(self, request):
+        """Grant a token."""
+        data = request.query["dt"]
+        # safe_string = urllib.parse.quote_plus(data)
+
+        ret = await self.app.eventBus.async_fire("oracmd",data)
+        return self.result(ret)
 
 async def detect(v):
     v.playVoice("在呢")

@@ -1,20 +1,49 @@
 [
     {
-        "content": "搜索国泰新点工程",
+        "content": "打开中央一台",
         "target": [
             {
                 "start": 2,
                 "end": 6,
-                "value": "国泰新点",
+                "value": "中央一台",
                 "length": 4,
                 "entity": "1"
-            },
+            }
+        ]
+    },
+    {
+        "content": "打开中央二台",
+        "target": [
             {
-                "start": 6,
-                "end": 8,
-                "value": "工程",
+                "start": 2,
+                "end": 6,
+                "value": "中央二台",
+                "length": 4,
+                "entity": "1"
+            }
+        ]
+    },
+    {
+        "content": "开房间灯",
+        "target": [
+            {
+                "start": 1,
+                "end": 3,
+                "value": "房间",
                 "length": 2,
-                "entity": "weather"
+                "entity": "0"
+            }
+        ]
+    },
+    {
+        "content": "开厨房灯",
+        "target": [
+            {
+                "start": 1,
+                "end": 3,
+                "value": "厨房",
+                "length": 2,
+                "entity": "0"
             }
         ]
     },
@@ -27,6 +56,18 @@
                 "value": "东门",
                 "length": 2,
                 "entity": "0"
+            }
+        ]
+    },
+    {
+        "content": "开中央一台",
+        "target": [
+            {
+                "start": 1,
+                "end": 5,
+                "value": "中央一台",
+                "length": 4,
+                "entity": "1"
             }
         ]
     }

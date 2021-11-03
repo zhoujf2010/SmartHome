@@ -16,9 +16,12 @@
       continue.</strong>
   </noscript>
   <button onclick="getData()">保存</button>
+  <button onclick="adddata()">添加数据</button>
   <button onclick="train()">数据训练</button>
   <button onclick="predict()">数据预测</button>
   <button onclick="test()">接口测试</button>
+  <button onclick="editjson()">编辑配置</button>
+
   <label> 最大行数限制：
     <select id="maxRowSelect">
       <option value="1">1</option>
@@ -28,6 +31,11 @@
       <option value="5">5</option>
     </select>
   </label>
+  &nbsp;&nbsp;&nbsp;
+  <input type="text" id="trycmd" value="开中央一台"></input>
+  <button onclick="cmdCall()">命令执行</button>
+  <span id="retinfo"></span>
+
 
   <div id="app"></div>
   <!-- built files will be auto injected -->
@@ -46,7 +54,7 @@
       });
       $.ajax({
         async: false,
-        url: "./api/messageTypes",
+        url: "./api/intentTypes",
         success: function (msg) {
           dt.messageTypeList = msg;
         }
@@ -69,7 +77,7 @@
     function getData() {
       var messageList = MessageEntityList.getMessageList();
       var del = MessageEntityList.getRemoveItems('message');
-      var data = {"messages":messageList,"delmessages":del}
+      var data = { "messages": messageList, "delmessages": del }
       // console.log(data);
 
       $.ajax({
@@ -86,7 +94,24 @@
       });
     }
 
-    function train(){
+    function cmdCall() {
+      var trycmd = $("#trycmd").val();
+      $.ajax({
+        url: "./test?dt=" + trycmd,
+        'contentType': 'application/text',
+        type: 'get',
+        success: function (data) {
+          console.log(data);
+          $("#retinfo").text(data);
+        },
+        error: function (error) {
+          console.log(error);
+          $("#retinfo").text(error.responseText);
+        }
+      });
+    }
+
+    function train() {
       $.ajax({
         url: "./train",
         data: "",
@@ -101,8 +126,16 @@
       });
     }
 
-    function test(){
+    function test() {
       window.open("./demo");
+    }
+
+    function editjson(){
+      window.open("./demo2");
+    }
+
+    function adddata() {
+      MessageEntityList.AddRow();
     }
 
     window.onload = function () {

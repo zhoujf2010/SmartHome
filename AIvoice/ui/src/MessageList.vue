@@ -110,6 +110,9 @@ export default {
     getMessageList() {
       return this.simplyCopy(this.list);
     },
+    AddRow(){
+      this.list.push({entities:[]});
+    },
     setMessageEditable(v) {
       this.messageEditable = !!v;
     },

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>配置编辑</title>
+	<link rel="stylesheet" href="./css/bootstrap.min.css">
+	<style>
+		.container {
+			margin-top: 10px;
+		}
+
+		#ajaxParams {
+			width: 100%;
+			height: 580px;
+			border: 1px solid #9e9e9e;
+		}
+
+		.clearfix:after {
+			content: ".";
+			display: block;
+			height: 0;
+			clear: both;
+			visibility: hidden
+		}
+
+		.panel-title {
+			margin-top: 8px;
+		}
+
+		.clearfix {
+			height: 1%;
+		}
+
+		.l {
+			float: left;
+		}
+
+		.r {
+			float: right;
+		}
+
+		.mr10 {
+			margin-right: 10px;
+		}
+
+		.mb15 {
+			margin-bottom: 15px;
+		}
+
+		.pan {
+			width: 50%;
+			float: left;
+		}
+	</style>
+</head>
+
+<body>
+	<div class="container">
+		<div class="form-group">
+			<label for="name">配置文件：</label>
+			<select id="jsonfile">
+				<option value="entityTypes">实体类型</option>
+				<option value="intentTypes">意图类型</option>
+			</select>
+			<button type="button" class="btn btn-primary" id="btn-request">保存</button>
+			<button type="button" class="btn btn-primary mr10" id="btn-beautify">格式化</button>
+		</div>
+
+		<div class="panel-body">
+			<div id="ajaxParams"></div>
+		</div>
+	</div>
+
+	<script src="./js/jquery-3.5.1.js"></script>
+	<script src="./js/beautify.min.js"></script>
+	<script src="./js/ace.js"></script>
+	<script>
+		// ace.edit('ajaxParams').setValue(js_beautify('{"text": "搜索国泰新点工程"}'), 1);
+	</script>
+
+	<script>
+		// assign 的 IE 兼容代码
+		if (typeof Object.assign != 'function') {
+			Object.defineProperty(Object, "assign", {
+				value: function assign(target, varArgs) {
+					'use strict';
+					if (target == null) {
+						throw new TypeError('Cannot convert undefined or null to object');
+					}
+
+					let to = Object(target);
+
+					for (var index = 1; index < arguments.length; index++) {
+						var nextSource = arguments[index];
+
+						if (nextSource != null) {
+							for (let nextKey in nextSource) {
+								if (Object.prototype.hasOwnProperty.call(nextSource, nextKey)) {
+									to[nextKey] = nextSource[nextKey];
+								}
+							}
+						}
+					}
+					return to;
+				},
+				writable: true,
+				configurable: true
+			});
+		}
+	</script>
+
+	<script>
+
+		(function (ace, js_beautify) {
+			'use strict'
+			const ajaxParamsEditor = ace.edit('ajaxParams');
+			const interfaceEl = document.getElementById('interface');
+			const streamEl = document.getElementById('stream');
+
+			ajaxParamsEditor.setTheme('ace/theme/xcode');
+			ajaxParamsEditor.getSession().setMode("ace/mode/json");
+			ajaxParamsEditor.setFontSize(14);
+			ajaxParamsEditor.setOptions({
+				enableBasicAutocompletion: true,
+				enableSnippets: true,
+				enableLiveAutocompletion: true,
+				wrap: true
+			});
+
+			function initListener() {
+				document.getElementById('btn-request').addEventListener('click', function () {
+					$.ajax({
+						url: "./api/" + $("#jsonfile").val(),
+						data: ajaxParamsEditor.getValue(),
+						dataType: "text",
+						contentType: "text",
+						type: 'post',
+						success: function (data) {
+							alert(data);
+						},
+						error: function (error) {
+							alert('请求失败！' + error);
+						}
+					});
+				});
+				document.getElementById('btn-beautify').addEventListener('click', function () {
+					var params = eval('(' + ajaxParamsEditor.getValue() + ')');
+					ace.edit('ajaxParams').setValue(js_beautify(JSON.stringify(params)), 1);
+				});
+				loaddata();
+			}
+
+			function loaddata() {
+				$.ajax({
+					url: "./api/" + $("#jsonfile").val(),
+					data: {},
+					dataType: "text",
+					contentType: "text",
+					success: function (msg) {
+						ace.edit('ajaxParams').setValue(msg, 1);
+					},
+					error: function (error) {
+						alert("Error:" + JSON.stringify(error));
+					}
+				});
+			}
+
+			$("#jsonfile").change(function () {
+				loaddata();
+			});
+
+			initListener();
+		}(window.ace, window.js_beautify))
+	</script>
+
+</body>
+
+</html>

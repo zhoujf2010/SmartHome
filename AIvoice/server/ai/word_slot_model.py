@@ -88,7 +88,7 @@ class JieBaPos(WordSlot):
         # print(self.postags)
         wt = pseg.cut(text)
         word_list = list(wt)
-        print(word_list)
+        # print(word_list)
         pos_container = defaultdict(list)
         for w in range(len(word_list)):
             if word_list[w].flag in self.postags:
