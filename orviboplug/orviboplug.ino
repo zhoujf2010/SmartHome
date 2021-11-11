@@ -5,7 +5,7 @@
 #include <EEPROM.h>
 
 
-String firmversion =    "2.0";
+String firmversion =    "2.2";
 
 // 欧瑞博设备
 String DEVICE    =      "plug";
@@ -61,8 +61,19 @@ void setup()
   led_timer.detach();
   led_timer.attach(0.2, blink);
 
-  String MQTT_TOPIC = "home/" + DEVICE + "/" + readID();
-  initMQTT(MQTT_TOPIC, callback);
+  String MQTT_TOPIC = "homeassistant/" + String("switch") + "/" + readID();
+  initMQTT(MQTT_TOPIC, "/set",false, callback);
+
+  String cfg = String("{");
+  cfg += "\"name\": \"" + readID() + "\"";
+  cfg += ",\"unique_id\":\"" + readID() + "\"";
+  //cfg += ",\"device_class\": \"power\"";
+  cfg += ",\"command_topic\": \"homeassistant/" + String("switch") + "/" + readID() + "/set\"";
+  cfg += ",\"state_topic\": \"homeassistant/" + String("switch") + "/" + readID() + "/state\"";
+  cfg += "}";
+
+  Serial.println(cfg);
+  sendmqtt("/config", cfg);
 
   StartFinish();
 
@@ -100,17 +111,17 @@ void button() {
 
 unsigned long checkLastTime;
 
-void callback(String payload_string) {
+void callback(String topic, String payload_string) {
   Serial.println("receive:" + payload_string);
 
   if (payload_string == "stat") {
   }
-  else if (payload_string == "on") {
+  else if (payload_string == "ON") {
     digitalWrite(LED, LEDOFF); //有操作后，状态灯就关闭
     digitalWrite(RELAY, HIGH);
     writeCusVal(0, 1);
   }
-  else if (payload_string == "off") {
+  else if (payload_string == "OFF") {
     digitalWrite(LED, LEDOFF); //有操作后，状态灯就关闭
     digitalWrite(RELAY, LOW);
     writeCusVal(0, 0);
@@ -130,12 +141,12 @@ void loop() {
 
   if (sendStatus) { //发送至mq
     if (digitalRead(RELAY) == HIGH)  {
-      sendmqtt("/stat", "on");
+      sendmqtt("/state", "ON");
       Serial.println("Relay . . . . . . . . . . . . . . . . . . ON");
       writeCusVal(0, 1);
 
     } else {
-      sendmqtt("/stat", "off");
+      sendmqtt("/state", "OFF");
       Serial.println("Relay . . . . . . . . . . . . . . . . . . OFF");
       writeCusVal(0, 0);
     }

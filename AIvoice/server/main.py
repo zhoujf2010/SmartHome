@@ -38,7 +38,7 @@ async def main():
     logger.info("启动服务，当前路径：" + dir_path)
     rootpath = dir_path + "/webpage"
 
-    app = webapp(82, "test")
+    app = webapp(8082, "test")
     app.eventBus = EventBus()
     app.loop = asyncio.get_running_loop()
 

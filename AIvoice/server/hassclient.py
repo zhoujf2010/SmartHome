@@ -11,7 +11,7 @@ import os
 import pprint
 from types import TracebackType
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Union
-
+import time
 import ujson
 from aiohttp import (
     ClientSession,
@@ -23,11 +23,12 @@ from aiohttp import (
 from typing import Optional
 
 
+# url = "http://192.168.3.101:8123"
 url = "http://192.168.3.168:8123"
 token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJlMzJkYmVjMTI4MTk0ZDAxODk1MDY2YTA0MWQ1NDNjNCIsImlhdCI6MTYzMDExODgyNCwiZXhwIjoxOTQ1NDc4ODI0fQ.aBRaWzvHyKixnX1MiCu3uqZ4W2De44n6TynsSjUY1DY"
 rooturlpath = "lovelace-wx"
 
-
+token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiIyMzhiNTU4ZTkzNGY0YjA3OWQ5MWM1ODU4NzJlYTYzNSIsImlhdCI6MTYzNjQ2NTIwOSwiZXhwIjoxOTUxODI1MjA5fQ.bh_Yu8h0BLw3Ur7CDlknzp7Z7tya0wLuG3TGIGpvkBA"
 async def async_setup(app):
     
     def dataReceive(eventtype, data):  #收到角度变换数据
@@ -338,9 +339,9 @@ class HomeAssistantClient:
         # start task to handle incoming messages
         self._loop.create_task(self._process_messages())
         # register event listener
-        # await self.send_command({"type": "subscribe_events"})
+        await self.send_command({"type": "subscribe_events"})
         # request full state once
-        # await self._request_full_state()
+        await self._request_full_state()
 
     async def disconnect(self) -> None:
         """Disconnect the client."""
@@ -405,11 +406,11 @@ class HomeAssistantClient:
                 )
                 return
 
-            # if msg["success"]:
-            #     future.set_result(msg["result"])
-            #     return
+            if msg["success"]:
+                future.set_result(msg["result"])
+                return
 
-            # future.set_exception(FailedCommand(msg["id"], msg["error"]["message"]))
+            future.set_exception(FailedCommand(msg["id"], msg["error"]["message"]))
             
             future.set_result(msg)
             return
@@ -461,6 +462,7 @@ class HomeAssistantClient:
 
     async def _request_full_state(self):
         """Request full state."""
+        vv =await self.send_command({"type": "get_states"})
         for item in await self.send_command({"type": "get_states"}):
             entity_id = item["entity_id"]
             self._states[entity_id] = item
@@ -531,3 +533,32 @@ class HomeAssistantClient:
                 return
             except CannotConnect:
                 pass
+
+
+def fff(vv,tt):
+    print(vv,tt)
+
+async def test():
+    hassclient = HomeAssistantClient(url, token)
+    hassclient.register_event_callback(fff)
+    await hassclient.connect()
+    print(hassclient.sensors)
+
+    time.sleep(2)
+    print("ready...1")
+    
+    # dt = {"type": "call_service", "domain": "switch", "service": "turn_on", "service_data": {"entity_id": "switch.mysmart_d5fa66"}}
+    # await hassclient.send_command(dt)
+
+    # time.sleep(2)
+    # print("ready...2")
+    # dt = {"type": "call_service", "domain": "switch", "service": "turn_off", "service_data": {"entity_id": "switch.mysmart_d5fa66"}}
+    # await hassclient.send_command(dt)
+
+    _stopped = asyncio.Event()
+    await _stopped.wait()
+
+
+if __name__ == '__main__':
+    asyncio.run(test())
+
