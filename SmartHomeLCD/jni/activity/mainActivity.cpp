@@ -4,6 +4,7 @@
 #include "mainActivity.h"
 
 /*TAG:GlobalVariable全局变量*/
+static ZKButton* mButton11Ptr;
 static ZKWindow* mWinSettingPtr;
 static ZKWindow* mWinSwitch1Ptr;
 static ZKButton* mbtnClearPtr;
@@ -97,6 +98,7 @@ typedef struct {
 
 /*TAG:ButtonCallbackTab按键映射表*/
 static S_ButtonCallback sButtonCallbackTab[] = {
+    ID_MAIN_Button11, onButtonClick_Button11,
     ID_MAIN_btnClear, onButtonClick_btnClear,
     ID_MAIN_btnReset, onButtonClick_btnReset,
     ID_MAIN_btnGetIP, onButtonClick_btnGetIP,
@@ -200,6 +202,7 @@ const char* mainActivity::getAppName() const{
 //TAG:onCreate
 void mainActivity::onCreate() {
 	Activity::onCreate();
+    mButton11Ptr = (ZKButton*)findControlByID(ID_MAIN_Button11);
     mWinSettingPtr = (ZKWindow*)findControlByID(ID_MAIN_WinSetting);
     mWinSwitch1Ptr = (ZKWindow*)findControlByID(ID_MAIN_WinSwitch1);
     mbtnClearPtr = (ZKButton*)findControlByID(ID_MAIN_btnClear);

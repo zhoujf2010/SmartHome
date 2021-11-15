@@ -25,7 +25,9 @@ from urllib.parse import urlparse, parse_qs
 
 
 
-
+# sudo apt-get install swig
+# sudo apt-get install libpulse-dev
+# sudo apt install python-pocketsphinx  或 sudo apt-get install python python-all-dev python-pip build-essential swig git libpulse-dev libasound2-dev
 # pip install SpeechRecognition
 # pip install PocketSphinx
 # pip install pyaudio
@@ -39,10 +41,10 @@ logger = logging.getLogger("myVoice")
 
 
 async def async_setup(app):
-    app.register_view(TestView(app))
+    # app.register_view(TestView(app))
 
-    # v = myVoice()
-    # # v.playVoice("你好,准备接受你的指令")
+    v = myVoice()
+    v.playVoice("你好,准备接受你的指令")
     
     # model = "./snowboy/小度.pmdl"
 

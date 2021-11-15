@@ -1,6 +1,8 @@
 #pragma once
 #include "uart/UartContext.h"
 #include "uart/ProtocolSender.h"
+#include "utils/BrightnessHelper.h"
+
 /*
 *此文件由GUI工具生成
 *文件功能：用于处理用户的逻辑相应代码
@@ -924,7 +926,14 @@ static bool onButtonClick_VolButton(ZKButton *pButton) {
 }
 static bool onButtonClick_Button11(ZKButton *pButton) {
     //LOGD(" ButtonClick Button11 !!!\n");
-	mListWindowPtr->showWnd();
+//mListWindowPtr->showWnd();
+	EASYUICONTEXT->openActivity("ZKSettingActivity");
+
+	int v = BRIGHTNESSHELPER->getBrightness();
+	LOGD(" current bright:%d" ,v);
+	//将屏幕亮度调整为0~100
+	BRIGHTNESSHELPER->setBrightness(80);
+
     return false;
 }
 static int getListItemCount_MusicListview(const ZKListView *pListView) {

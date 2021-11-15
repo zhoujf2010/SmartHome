@@ -439,8 +439,8 @@ if __name__ == '__main__':
         print("功能：")
         print("[0] 扫描设备")
         print("[1] 扫描网络IP")
-        print("[2] 配置设备")
-        print("[3] 初使化设备")
+        print("[2] 初使化设备")
+        print("[3] 重置设备")
         print("[4] 更新设备固件")
         print("[5] 复制新生成固件")
         print("[6] 退出")
@@ -471,6 +471,7 @@ if __name__ == '__main__':
             if ip == "":
                 ip = data
             open(tmpfile,"w").write(ip)
+            ip = ip.strip()
             print("准备烧写信息："+ ip)
             DoSetNewDev(ip.split(",")[0],ip.split(",")[1],ip.split(",")[2])
         elif index == "3":

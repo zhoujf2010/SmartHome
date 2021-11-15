@@ -98,7 +98,7 @@ uint64_t getUInt64fromHex(char const *str) {
 const int32_t kMaxPauseMs = 10000;  // 10 Seconds.
 bool lastSendSucceeded = false;  // Store the success status of the last send.
 
-void callback(String payload_string) {
+void callback(String topic,String payload_string) {
 //  if (isfirstconnMQTT)  { //跳过首次收到的信息
 //    isfirstconnMQTT = false;
 //    return ;

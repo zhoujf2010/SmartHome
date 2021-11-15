@@ -42,11 +42,11 @@ async def main():
     app.eventBus = EventBus()
     app.loop = asyncio.get_running_loop()
 
-    await backend.async_setup(app)
-    await frontpage.async_setup(app, rootpath)
-    await AIModel.async_setup(app, dir_path)
+    # await backend.async_setup(app)
+    # await frontpage.async_setup(app, rootpath)
+    # await AIModel.async_setup(app, dir_path)
     await myVoice.async_setup(app)
-    await hassclient.async_setup(app)
+    # await hassclient.async_setup(app)
 
     await app.start()
 

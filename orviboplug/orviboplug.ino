@@ -5,7 +5,7 @@
 #include <EEPROM.h>
 
 
-String firmversion =    "2.2";
+String firmversion =    "2.5";
 
 // 欧瑞博设备
 String DEVICE    =      "plug";
@@ -62,8 +62,16 @@ void setup()
   led_timer.attach(0.2, blink);
 
   String MQTT_TOPIC = "homeassistant/" + String("switch") + "/" + readID();
-  initMQTT(MQTT_TOPIC, "/set",false, callback);
+  initMQTT(MQTT_TOPIC, "/set",false, callback,initMqttDevice);
 
+  StartFinish();
+
+  led_timer.detach();
+  digitalWrite(LED, LEDON); //灯常亮，表示连接成功
+}
+
+
+void initMqttDevice(){
   String cfg = String("{");
   cfg += "\"name\": \"" + readID() + "\"";
   cfg += ",\"unique_id\":\"" + readID() + "\"";
@@ -73,12 +81,9 @@ void setup()
   cfg += "}";
 
   Serial.println(cfg);
+  Serial.println("222");
   sendmqtt("/config", cfg);
-
-  StartFinish();
-
-  led_timer.detach();
-  digitalWrite(LED, LEDON); //灯常亮，表示连接成功
+  Serial.println("333");
 }
 
 void blink() {

@@ -15,7 +15,7 @@ String readID();
 String readmqttip();
 String getIP();
 
-void initMQTT(String MQTT_TOPIC,String subtopic,boolean ignorefirstmsg,std::function<void(String topic,String payload)> callback);
+void initMQTT(String MQTT_TOPIC,String subtopic,boolean ignorefirstmsg,std::function<void(String topic,String payload)> callback, std::function<void()> initDevice);
 void sendmqtt(String path, String msg);
 void connectMQTT();
 void checkConnection();

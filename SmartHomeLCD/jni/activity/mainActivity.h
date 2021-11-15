@@ -26,6 +26,7 @@
 #include "window/ZKSlideWindow.h"
 
 /*TAG:Macro宏ID*/
+#define ID_MAIN_Button11    20020
 #define ID_MAIN_WinSetting    110011
 #define ID_MAIN_WinSwitch1    110005
 #define ID_MAIN_btnClear    20019

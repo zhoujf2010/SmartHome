@@ -34,8 +34,15 @@ void setup() {
   initOTA(LED);// 初使化OTA模式
 
   String MQTT_TOPIC = "homeassistant/" + DEVICE + "/" + readID();
-  initMQTT(MQTT_TOPIC, "/set",false, callback);
+  initMQTT(MQTT_TOPIC, "/set",false, callback,initMqttDevice);
+  
+  StartFinish();
 
+  led_timer.detach();
+  digitalWrite(LED, LEDON); //灯常亮，表示连接成功
+}
+
+void initMqttDevice(){
   String cfg = String("{");
   cfg += "\"name\": \"" + readID() + "\"";
   cfg += ",\"unique_id\":\"" + readID() + "\"";
@@ -46,11 +53,6 @@ void setup() {
 
   Serial.println(cfg);
   sendmqtt("/config", cfg);
-  
-  StartFinish();
-
-  led_timer.detach();
-  digitalWrite(LED, LEDON); //灯常亮，表示连接成功
 }
 
 void blink() {

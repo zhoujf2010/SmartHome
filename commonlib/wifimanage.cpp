@@ -33,7 +33,7 @@ void handle_AProot() {
   script += "document.getElementsByName(\"mqttIP\")[0].value=\"" + readmqttip() + "\";";
   script += "</script>";
 
-  pagecontent1.replace("%CurrentVersion%",CurrentVersion);
+  pagecontent1.replace("%CurrentVersion%", CurrentVersion);
   SServerSend += pagecontent1 + pagecontent2 + script + pagecontent3;
   server.send(200, "text/html", SServerSend);
   delay(1);
@@ -350,6 +350,7 @@ bool hasmqtt = false;
 String _MQTT_TOPIC = "";
 String _subtopic = "";
 std::function<void(String topic, String payload)> _callback;
+std::function<void()> _initDevice;
 bool firstconnect = false;
 
 void innercallback(char* topic, byte* payload, unsigned int length) {
@@ -365,22 +366,26 @@ void innercallback(char* topic, byte* payload, unsigned int length) {
     return ;
   }
   _callback(topic_str, payload_string);
+
+  if (payload_string == "reinit")
+    _initDevice();
 }
 
 boolean _ignorefirstmsg = false;
 
-void initMQTT(String MQTT_TOPIC, String subtopic, boolean ignorefirstmsg, std::function<void(String topic, String payload)> callback) {
+void initMQTT(String MQTT_TOPIC, String subtopic, boolean ignorefirstmsg, std::function<void(String topic, String payload)> callback, std::function<void()> initDevice) {
   _MQTT_TOPIC = MQTT_TOPIC;
   _subtopic = subtopic;
   _callback = callback;
+  _initDevice = initDevice;
   _ignorefirstmsg = ignorefirstmsg;
   if (readmqttip() != "") {
     char* c = new char[200];  //深度copy一下，否则直接用就不行
     strcpy(c, readmqttip().c_str());
     mqttClient.setServer(c, 1883);
     mqttClient.setCallback(innercallback);
-    connectMQTT();
     hasmqtt = true;
+    connectMQTT();
   }
 }
 
@@ -404,15 +409,16 @@ void connectMQTT() {
       delay(5000);// Wait 5 seconds before retrying
     }
   }
+  _initDevice();
 }
 
 void sendmqtt(String path, String msg) {
   String path2 = path;
   if (path.startsWith("/"))
     path2 = _MQTT_TOPIC + path;
-
   if (hasmqtt && mqttClient.connected()) {
     mqttClient.publish(path2.c_str(), msg.c_str());
+//    Serial.println("send [" + path2 + "] msg:" + msg);
   }
 }
 
