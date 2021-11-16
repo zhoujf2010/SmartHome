@@ -7,7 +7,7 @@
 
 
 //易微联设备
-String firmversion =    "2.3";
+String firmversion =    "2.5";
 String DEVICE      =    "switch";
 #define BUTTON          0
 #define BUTTON1         9
@@ -86,8 +86,16 @@ void setup()
   led_timer.attach(0.2, blink);
 
   String MQTT_TOPIC = "homeassistant/" + DEVICE + "/" + readID();
-  initMQTT(MQTT_TOPIC, "/set", false, callback);
+  initMQTT(MQTT_TOPIC, "/set", false, callback, initMqttDevice);
 
+
+  StartFinish();
+
+  led_timer.detach();
+  digitalWrite(LED, LEDON); //灯常亮，表示连接成功
+}
+
+void initMqttDevice() {
   String cfg = String("{");
   cfg += "\"name\": \"" + readID() + "\"";
   cfg += ",\"unique_id\":\"" + readID() + "\"";
@@ -121,14 +129,7 @@ void setup()
     Serial.println(cfg);
     sendmqtt("homeassistant/" + DEVICE + "/" + readID() + "_3/config", cfg);
   }
-
-  StartFinish();
-
-  led_timer.detach();
-  digitalWrite(LED, LEDON); //灯常亮，表示连接成功
 }
-
-
 
 //加载页面
 void handle_cfg() {
