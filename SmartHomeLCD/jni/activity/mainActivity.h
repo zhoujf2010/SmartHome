@@ -26,11 +26,20 @@
 #include "window/ZKSlideWindow.h"
 
 /*TAG:Macro宏ID*/
-#define ID_MAIN_Button11    20020
+#define ID_MAIN_WinMusic    110002
+#define ID_MAIN_WinMode3    110003
+#define ID_MAIN_WinCurtain2    110006
+#define ID_MAIN_WinAC1    110004
+#define ID_MAIN_WinSwitch0    110005
+#define ID_MAIN_btnReboot    20020
+#define ID_MAIN_txtCfgName    51002
+#define ID_MAIN_TextView4    50025
+#define ID_MAIN_TextView1    50024
+#define ID_MAIN_txtHassIP    51001
+#define ID_MAIN_btnCfgsave    20019
+#define ID_MAIN_SeekBarbright    91002
+#define ID_MAIN_btnReloadCfg    20015
 #define ID_MAIN_WinSetting    110011
-#define ID_MAIN_WinSwitch1    110005
-#define ID_MAIN_btnClear    20019
-#define ID_MAIN_btnReset    20015
 #define ID_MAIN_btnGetIP    20018
 #define ID_MAIN_txtTextinfo    50012
 #define ID_MAIN_TextView3    50023
@@ -42,7 +51,6 @@
 #define ID_MAIN_Button1    20013
 #define ID_MAIN_Textview11    50011
 #define ID_MAIN_Textview3    50003
-#define ID_MAIN_Window4    110006
 #define ID_MAIN_SubItem2    20005
 #define ID_MAIN_Listview2    80002
 #define ID_MAIN_Textview10    50010
@@ -60,13 +68,11 @@
 #define ID_MAIN_ListviewTempture    80003
 #define ID_MAIN_Textview9    50009
 #define ID_MAIN_Textview2    50002
-#define ID_MAIN_Window2    110004
 #define ID_MAIN_TextviewMode    50017
 #define ID_MAIN_SubItem3    20012
 #define ID_MAIN_ListViewMode    80004
 #define ID_MAIN_Textview8    50008
 #define ID_MAIN_Textview4    50004
-#define ID_MAIN_Windowmode    110003
 #define ID_MAIN_MusicListview    80009
 #define ID_MAIN_ListWindow    110008
 #define ID_MAIN_Pointer1    90001
@@ -82,7 +88,6 @@
 #define ID_MAIN_Button2    20003
 #define ID_MAIN_ButtonPlay    20002
 #define ID_MAIN_Textview5    50005
-#define ID_MAIN_WindowMusic    110002
 #define ID_MAIN_Window1    110001
 #define ID_MAIN_SubItem1    20001
 #define ID_MAIN_Listview1    80001

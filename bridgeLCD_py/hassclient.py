@@ -148,6 +148,7 @@ class HomeAssistantClient:
         else:
             raise CannotConnect("Please provide a valid url and token!")
         self._event_listeners = []
+        self.msgcallback = []
         self._version = None
         self._last_msg_id = 0
         self._loop = asyncio.get_running_loop()
@@ -188,6 +189,19 @@ class HomeAssistantClient:
             self._event_listeners.remove(listener)
 
         return remove_listener
+
+    def register_Msg_callback(
+        self,
+        cb_func
+    ) -> Callable:
+        """
+        Add callback for events.
+        Returns function to remove the listener.
+            :param cb_func: callback function or coroutine
+            :param event_filter: Optionally only listen for these events
+            :param entity_filter: In case of state_changed event, only forward these entities
+        """
+        self.msgcallback.append(cb_func)
 
     @property
     def device_registry(self) -> dict:
@@ -301,7 +315,9 @@ class HomeAssistantClient:
         """Send a command to the HA websocket and return response."""
         future: "asyncio.Future[dict]" = self._loop.create_future()
         self._last_msg_id += 1
-        message_id = message["id"] = self._last_msg_id
+        if "id" not in message:
+            message["id"] = self._last_msg_id
+        message_id = message["id"]
         self._result_futures[message_id] = future
         await self._send_json_message(message)
         try:
@@ -378,6 +394,11 @@ class HomeAssistantClient:
                     LOGGER.debug("Received message:\n%s\n", pprint.pformat(msg))
 
                 self._handle_incoming_message(data)
+                try:
+                    for item in self.msgcallback:
+                        await item(data)
+                except Exception as e:
+                    print(e)
 
         finally:
             # TODO: handle reconnect!
@@ -547,13 +568,13 @@ async def test():
     time.sleep(2)
     print("ready...1")
     
-    # dt = {"type": "call_service", "domain": "switch", "service": "turn_on", "service_data": {"entity_id": "switch.mysmart_d5fa66"}}
-    # await hassclient.send_command(dt)
+    dt = {"type": "call_service", "domain": "switch", "service": "turn_on", "service_data": {"entity_id": "switch.mysmart_d5fa66"}}
+    await hassclient.send_command(dt)
 
-    # time.sleep(2)
-    # print("ready...2")
-    # dt = {"type": "call_service", "domain": "switch", "service": "turn_off", "service_data": {"entity_id": "switch.mysmart_d5fa66"}}
-    # await hassclient.send_command(dt)
+    time.sleep(2)
+    print("ready...2")
+    dt = {"type": "call_service", "domain": "switch", "service": "turn_off", "service_data": {"entity_id": "switch.mysmart_d5fa66"}}
+    await hassclient.send_command(dt)
 
     _stopped = asyncio.Event()
     await _stopped.wait()

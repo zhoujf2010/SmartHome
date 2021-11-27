@@ -2,36 +2,45 @@
 #include "uart/UartContext.h"
 #include "uart/ProtocolSender.h"
 #include "utils/BrightnessHelper.h"
+//#include "net/net.h"
+#include "hass/hass.h"
+#include "pages/page1.h"
+#include "net/NetManager.h"
+#include "storage/StoragePreferences.h"
+#include<unistd.h>
+#include<sys/reboot.h>
+
+#define  WIFIMANAGER    NETMANAGER->getWifiManager()
 
 /*
-*此文件由GUI工具生成
-*文件功能：用于处理用户的逻辑相应代码
-*功能说明：
-*========================onButtonClick_XXXX
-当页面中的按键按下后系统会调用对应的函数，XXX代表GUI工具里面的[ID值]名称，
-如Button1,当返回值为false的时候系统将不再处理这个按键，返回true的时候系统将会继续处理此按键。比如SYS_BACK.
-*========================onSlideWindowItemClick_XXXX(int index)
-当页面中存在滑动窗口并且用户点击了滑动窗口的图标后系统会调用此函数,XXX代表GUI工具里面的[ID值]名称，
-如slideWindow1;index 代表按下图标的偏移值
-*========================onSeekBarChange_XXXX(int progress)
-当页面中存在滑动条并且用户改变了进度后系统会调用此函数,XXX代表GUI工具里面的[ID值]名称，
-如SeekBar1;progress 代表当前的进度值
-*========================ogetListItemCount_XXXX()
-当页面中存在滑动列表的时候，更新的时候系统会调用此接口获取列表的总数目,XXX代表GUI工具里面的[ID值]名称，
-如List1;返回值为当前列表的总条数
-*========================oobtainListItemData_XXXX(ZKListView::ZKListItem *pListItem, int index)
+ *此文件由GUI工具生成
+ *文件功能：用于处理用户的逻辑相应代码
+ *功能说明：
+ *========================onButtonClick_XXXX
+ 当页面中的按键按下后系统会调用对应的函数，XXX代表GUI工具里面的[ID值]名称，
+ 如Button1,当返回值为false的时候系统将不再处理这个按键，返回true的时候系统将会继续处理此按键。比如SYS_BACK.
+ *========================onSlideWindowItemClick_XXXX(int index)
+ 当页面中存在滑动窗口并且用户点击了滑动窗口的图标后系统会调用此函数,XXX代表GUI工具里面的[ID值]名称，
+ 如slideWindow1;index 代表按下图标的偏移值
+ *========================onSeekBarChange_XXXX(int progress)
+ 当页面中存在滑动条并且用户改变了进度后系统会调用此函数,XXX代表GUI工具里面的[ID值]名称，
+ 如SeekBar1;progress 代表当前的进度值
+ *========================ogetListItemCount_XXXX()
+ 当页面中存在滑动列表的时候，更新的时候系统会调用此接口获取列表的总数目,XXX代表GUI工具里面的[ID值]名称，
+ 如List1;返回值为当前列表的总条数
+ *========================oobtainListItemData_XXXX(ZKListView::ZKListItem *pListItem, int index)
  当页面中存在滑动列表的时候，更新的时候系统会调用此接口获取列表当前条目下的内容信息,XXX代表GUI工具里面的[ID值]名称，
-如List1;pListItem 是贴图中的单条目对象，index是列表总目的偏移量。具体见函数说明
-*========================常用接口===============
-*LOGD(...)  打印调试信息的接口
-*mTextXXXPtr->setText("****") 在控件TextXXX上显示文字****
-*mButton1Ptr->setSelected(true); 将控件mButton1设置为选中模式，图片会切换成选中图片，按钮文字会切换为选中后的颜色
-*mSeekBarPtr->setProgress(12) 在控件mSeekBar上将进度调整到12
-*mListView1Ptr->refreshListView() 让mListView1 重新刷新，当列表数据变化后调用
-*mDashbroadView1Ptr->setTargetAngle(120) 在控件mDashbroadView1上指针显示角度调整到120度
-*
-* 在Eclipse编辑器中  使用 “alt + /”  快捷键可以打开智能提示
-*/
+ 如List1;pListItem 是贴图中的单条目对象，index是列表总目的偏移量。具体见函数说明
+ *========================常用接口===============
+ *LOGD(...)  打印调试信息的接口
+ *mTextXXXPtr->setText("****") 在控件TextXXX上显示文字****
+ *mButton1Ptr->setSelected(true); 将控件mButton1设置为选中模式，图片会切换成选中图片，按钮文字会切换为选中后的颜色
+ *mSeekBarPtr->setProgress(12) 在控件mSeekBar上将进度调整到12
+ *mListView1Ptr->refreshListView() 让mListView1 重新刷新，当列表数据变化后调用
+ *mDashbroadView1Ptr->setTargetAngle(120) 在控件mDashbroadView1上指针显示角度调整到120度
+ *
+ * 在Eclipse编辑器中  使用 “alt + /”  快捷键可以打开智能提示
+ */
 
 #include "utils/TimeHelper.h"
 #include <dirent.h>
@@ -39,188 +48,216 @@
 #include <sys/stat.h>
 #include "os/MountMonitor.h"
 
-
+static void DealPage0_init(Json::Value root2); //灯初使化页
+static void DealPage5_init(Json::Value root2); //配置初使化页
 
 /******************* 左侧选择栏 *******************************/
-static int targetPos,curPos;
+typedef void (*InitFunction)(Json::Value root);
 
-static int uipos[]={
-		0,
-		-480,
-		-960,
-		-1440,
-		-1920,
-		-2400,
-		-2880
-};
+static int listSel = 0; //当前所选项
+static int pagenum = 1;  //总的页数
+
+static int targetPos, curPos;
+static string* IconText = new string[2] { "0", "a" }; //图标（两项，未选中、选中）
+static int *uipos = new int[1] { -2400 };  //页面位置
+static InitFunction* initfunlist = new InitFunction[1] { NULL };
+
+static void InitLeftList() {
+	LOGD("初使化左侧");
+	Json::Value cfg = HASS->getConfig(-1);
+	pagenum = cfg.size() + 1; //默认增加一个配置页
+
+	delete uipos;
+	uipos = new int[pagenum];
+	delete IconText;
+	IconText = new string[pagenum * 2 + 2];
+	delete initfunlist;
+	initfunlist = new InitFunction[pagenum];
+
+	for (int i = 0; i < cfg.size(); i++) {
+		string title = cfg[i]["title"].asString();
+		int p = title.find("_", 0);
+		string type = "";
+		if (p > 0)
+			type = title.substr(p + 1, title.length() - 1);
+		LOGD("第%d页，类型:%s，标题:%s", i, type.c_str(), title.c_str());
+
+		if (type == "0") { //灯
+			uipos[i] = 0;
+			IconText[i * 2] = '0';
+			IconText[i * 2 + 1] = 'a';
+			initfunlist[i] = DealPage0_init;
+		} else if (type == "1") { //空调 -480
+			uipos[i] = -480 * 1;
+			IconText[i * 2] = '1';
+			IconText[i * 2 + 1] = 'b';
+			initfunlist[i] = NULL;
+		} else if (type == "2") { //窗帘 -960
+			uipos[i] = -480 * 2;
+			IconText[i * 2] = '2';
+			IconText[i * 2 + 1] = 'c';
+			initfunlist[i] = NULL;
+		} else if (type == "3") { //情景模式 -1440
+			uipos[i] = -480 * 3;
+			IconText[i * 2] = '3';
+			IconText[i * 2 + 1] = 'd';
+			initfunlist[i] = NULL;
+		} else {
+			uipos[i] = 0;
+			IconText[i * 2] = '0';
+			IconText[i * 2 + 1] = 'a';
+			initfunlist[i] = NULL;
+		}
+	}
+	uipos[pagenum - 1] = -480 * 5; //配置页
+	initfunlist[pagenum - 1] = DealPage5_init;
+	IconText[(pagenum - 1) * 2] = '5';
+	IconText[(pagenum - 1) * 2 + 1] = 'f';
+	targetPos = uipos[listSel];
+
+	mListview1Ptr->refreshListView();
+	if (pagenum > 1 && initfunlist[listSel] != NULL)
+		initfunlist[listSel](HASS->getConfig(listSel));
+	LOGD("初使化成功");
+}
 
 static int getListItemCount_Listview1(const ZKListView *pListView) {
-    //LOGD("getListItemCount_Listview1 !\n");
-    return 6;
+	return pagenum;
 }
-static int listSel = 0;
-static const char* IconText[]={
-		"0","a",
-		"1","b",
-		"2","c",
-		"3","d",
-		"4","e",
-		"5","f",
-		"6","g",
-		"1","b"
-};
 
-static void obtainListItemData_Listview1(ZKListView *pListView,ZKListView::ZKListItem *pListItem, int index) {
-    //LOGD(" obtainListItemData_ Listview1  !!!\n");
+static void obtainListItemData_Listview1(ZKListView *pListView, ZKListView::ZKListItem *pListItem, int index) {
 	ZKListView::ZKListSubItem* item = pListItem->findSubItemByID(ID_MAIN_SubItem1);
-	if(listSel == index){
-		item->setText(IconText[index*2+1]);
-	}else{
-		item->setText(IconText[index*2]);
+	if (listSel == index) { //切换图标
+		item->setText(IconText[index * 2 + 1]);
+	} else {
+		item->setText(IconText[index * 2]);
 	}
 }
 
 static void onListItemClick_Listview1(ZKListView *pListView, int index, int id) {
-    //LOGD(" onListItemClick_ Listview1  !!!\n");
 	listSel = index;
 	targetPos = uipos[index];
-	LOGD(" onListItemClick_ Listview1 %d  !!!\n",index);
-
-	char buf[40] = {0};
-	snprintf(buf, sizeof(buf), "{\"type\":\"init\",\"value\":\"page%d\"}", index);
-	sendProtocol(CMDID_INFO, buf, 40);
+	if (initfunlist[index] != NULL)
+		initfunlist[index](HASS->getConfig(index));
 }
 
+/******************* 第1页，开关处理(Pos:0)*******************************/
+static string LampName[9]; //开关项名称
+static bool LampSel[9];    //开关状态(true打开，flase:关闭）
 
+static void DealPage0_init(Json::Value root2) {
+	Json::Value cards = root2["cards"];
+//	LOGD("===>%s",root2.toStyledString().c_str());
+	string title = root2["title"].asString();
+	int p = title.find("_", 0);
+	if (p > 0)
+		title = title.substr(0, p);
 
-/******************* 第1页，开关处理*******************************/
-static int lamplistSel = 0;	//按钮按键状态，用位来表示
-string LampName[9];
+	//设置标题
+	mTextview1Ptr->setText(title);
 
-static void DealPage0_init(Json::Value root2){
-    Json::Value obj = root2["data"];
-
-    //清空
-    for (int i = 0; i < 9; ++i) {
-    	LampName[i] = "";
-	 }
-    //获取标题
-    for (Json::ArrayIndex i = 0; i < obj.size(); ++i) {
-    	LampName[i] = obj[i].asString();
-	 }
-	int value = 0;
-	if (root2.isMember("listSel"))
-		value = root2["listSel"].asInt();
-    lamplistSel = value;
-
-	mListview2Ptr->refreshListView();
-}
-
-static void DealPage0(Json::Value root2) {
-	int index = 0;
-	int value = 0;
-	if (root2.isMember("index"))
-		index = root2["index"].asInt();
-	if (root2.isMember("value"))
-		value = root2["value"].asInt();
-
-	if (value == 0)
-		lamplistSel &= ~(1 << index);
-	else if (value == 1)
-		lamplistSel |= (1 << index);
+	//清空
+	for (int i = 0; i < 9; ++i)
+		LampName[i] = "";
+	//获取标题及状态值
+	for (Json::ArrayIndex i = 0; i < cards.size(); ++i) {
+		LampName[i] = cards[i]["name"].asString();
+		LampSel[i] = cards[i]["state"].asString() == "on";
+	}
 
 	mListview2Ptr->refreshListView();
 }
 
 static int getListItemCount_Listview2(const ZKListView *pListView) {
-    return 9;
+	return HASS->getConfig(listSel)["cards"].size();
 }
 
-static void obtainListItemData_Listview2(ZKListView *pListView,ZKListView::ZKListItem *pListItem, int index) {
-    //LOGD(" obtainListItemData_ Listview2  !!!\n");
-	ZKListView::ZKListSubItem* subitem = pListItem->findSubItemByID(
-			ID_MAIN_SubItem2);
-	if (lamplistSel & (1 << index))
-		subitem->setSelected(true);
-	else
-		subitem->setSelected(false);
-
-	if (LampName[index] == "")
-		subitem->setVisible(false);
-	else
-		subitem->setVisible(true);
+static void obtainListItemData_Listview2(ZKListView *pListView, ZKListView::ZKListItem *pListItem, int index) {
+	ZKListView::ZKListSubItem* subitem = pListItem->findSubItemByID(ID_MAIN_SubItem2);
+	//设置选择状态
+	subitem->setSelected(LampSel[index]);
+	//设置是否显示
+	subitem->setVisible(LampName[index] != "");
+	//设置文本
 	pListItem->setText(LampName[index].c_str());
 }
 
 static void onListItemClick_Listview2(ZKListView *pListView, int index, int id) {
-	int v = lamplistSel & (1 << index) ;
-	if (v > 0)
-		v = 0;
-	else
-		v = 1;
-
-	LOGD(" onListItemClick_ Listview2 %d  !!!\n",index);
-	char buf[50] = {0};
-	snprintf(buf, sizeof(buf), "{\"type\":\"page0\",\"index\":%d,\"value\":%d}", index,v);
-	sendProtocol(CMDID_INFO, buf, 50);
+	HASS->switchchg(listSel, index, LampSel[index]);
 }
 
-
-
-/******************* 第2页，*******************************/
-
-
+/******************* 第2页(空调,POS:480)*******************************/
 
 /******************* 设置页面 *******************************/
-static void inner_init(Json::Value root2){
-	string msg = root2["msg"].asString();
-	string result = root2["result"].asString();
-	LOGD("msg->%s,result->%s", msg.c_str(),result.c_str());
-	if (msg =="ip")
-		mtxtTextinfoPtr->setText(result);
+static void DealPage5_init(Json::Value root2) {
+//	string msg = root2["msg"].asString();
+//	string result = root2["result"].asString();
+//	LOGD("msg->%s,result->%s", msg.c_str(), result.c_str());
+//	if (msg == "ip")
+//		mtxtTextinfoPtr->setText(result);
+
+	mtxtTextinfoPtr->setText(WIFIMANAGER->getIp());
+
+	int v = BRIGHTNESSHELPER->getBrightness();
+	v = StoragePreferences::getInt("bright", v);
+	mSeekBarbrightPtr->setProgress(v);
+
+	//hassIP
+	mtxtHassIPPtr->setText(HASS->ipaddr);
+	mtxtCfgNamePtr->setText(HASS->cfgName);
 }
 
-//按钮 获取IP地址
+static void onProgressChanged_SeekBarbright(ZKSeekBar *pSeekBar, int progress) {
+	//LOGD(" ProgressChanged SeekBarbright %d !!!\n", progress);
+	BRIGHTNESSHELPER->setBrightness(progress);
+}
+
+//按钮 设置网络
 static bool onButtonClick_btnGetIP(ZKButton *pButton) {
-	char buf[40] = {0};
-	snprintf(buf, sizeof(buf), "{\"type\":\"inner\",\"msg\":\"ip\"}");
-	sendProtocol(CMDID_INFO, buf, 40);
-    return false;
+	EASYUICONTEXT->openActivity("ZKSettingActivity");
+
+//	int v = BRIGHTNESSHELPER->getBrightness();
+//	LOGD(" current bright:%d", v);
+//	//将屏幕亮度调整为0~100
+//	BRIGHTNESSHELPER->setBrightness(80);
+	return false;
 }
 
-//按钮 重启ESP芯片
-static bool onButtonClick_btnReset(ZKButton *pButton) {
-	char buf[40] = {0};
-	snprintf(buf, sizeof(buf), "{\"type\":\"inner\",\"msg\":\"reset\"}");
-	sendProtocol(CMDID_INFO, buf, 40);
-    return false;
+//按钮 重置配置
+static bool onButtonClick_btnReloadCfg(ZKButton *pButton) {
+	HASS->LoadInitData();
+	return false;
 }
 
-//按钮 清空ESP芯片
-static bool onButtonClick_btnClear(ZKButton *pButton) {
-	char buf[40] = {0};
-	snprintf(buf, sizeof(buf), "{\"type\":\"inner\",\"msg\":\"clear\"}");
-	sendProtocol(CMDID_INFO, buf, 40);
-    return false;
+//配置保存
+static bool onButtonClick_btnCfgsave(ZKButton *pButton) {
+	HASS->saveCfg();
+
+	int v = BRIGHTNESSHELPER->getBrightness();
+	StoragePreferences::putInt("bright", v);
+	return false;
 }
 
+//重启
+static bool onButtonClick_btnReboot(ZKButton *pButton) {
+	//同步数据，将缓存数据保存，以防数据丢失
+	sync();
+	reboot(RB_AUTOBOOT);
+	return false;
+}
 
 /**************************************************/
 
-
-
-const int dayTab[]={31,28,31,30,31,30,31,31,30,31,30,31,30};
-
+const int dayTab[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31, 30 };
 
 #include "media/ZKMediaPlayer.h"
 static ZKMediaPlayer sPlayer(ZKMediaPlayer::E_MEDIA_TYPE_AUDIO);
 static bool sIsPlayOK = false;
 static bool bPause = false;
 
-static vector<string>fileList;
+static vector<string> fileList;
 static unsigned int curPlayIndex = 0;
 static unsigned int lastPlayIndex = 0;
-
 
 /**
  * 扫描文件
@@ -228,43 +265,43 @@ static unsigned int lastPlayIndex = 0;
  * fileType:指令扫描文件类型，为空时表示不指定文件类型
  */
 static void ScanFile(const char *path, const char *fileType) {
-    struct dirent* d = NULL;
-    DIR *pDir;
-    pDir = opendir(path);
-    if (pDir == NULL) {
-        //被当作目录，但是执行opendir后发现又不是目录，比如软链接就会发生这样的情况。
-        return ;
-    }
-    while (NULL != (d = readdir(pDir))) {
-        if (d->d_type == DT_REG) {
-            //file
+	struct dirent* d = NULL;
+	DIR *pDir;
+	pDir = opendir(path);
+	if (pDir == NULL) {
+		//被当作目录，但是执行opendir后发现又不是目录，比如软链接就会发生这样的情况。
+		return;
+	}
+	while (NULL != (d = readdir(pDir))) {
+		if (d->d_type == DT_REG) {
+			//file
 			string name = d->d_name;
 			unsigned int pos = name.rfind(".");
-			if(pos != string::npos){
-				name = name.substr(pos+1, name.length());
-				if(strcmp(fileType, name.c_str()) == 0){
-					string  str = path;
+			if (pos != string::npos) {
+				name = name.substr(pos + 1, name.length());
+				if (strcmp(fileType, name.c_str()) == 0) {
+					string str = path;
 					str += "/";
 					str += d->d_name;
 					fileList.push_back(str);
 				}
 			}
-        } else {
-            if (strcmp(d->d_name, ".") == 0 || strcmp(d->d_name, "..") == 0) {
-                continue;
-            }
-            //directory
-            string tempPath(path);
-            tempPath += "/";
-            tempPath += d->d_name;
-            ScanFile(tempPath.c_str(), fileType);
-        }
-    }
-    closedir(pDir);
-    return ;
+		} else {
+			if (strcmp(d->d_name, ".") == 0 || strcmp(d->d_name, "..") == 0) {
+				continue;
+			}
+			//directory
+			string tempPath(path);
+			tempPath += "/";
+			tempPath += d->d_name;
+			ScanFile(tempPath.c_str(), fileType);
+		}
+	}
+	closedir(pDir);
+	return;
 }
 
-class MyMountListener : public MountMonitor::IMountListener {
+class MyMountListener: public MountMonitor::IMountListener {
 public:
 	virtual void notify(int what, int status, const char *msg) {
 		switch (status) {
@@ -277,15 +314,15 @@ public:
 			sprintf(str, "sdcard已插入共%d首歌曲", fileList.size());
 			mTextview19Ptr->setText(str);
 			mTextview19Ptr->setVisible(true);
-			if(fileList.size() > 0){
+			if (fileList.size() > 0) {
 				mListButtonPtr->setInvalid(false);
-			}else{
+			} else {
 				mListButtonPtr->setInvalid(true);
 			}
 			break;
 		case MountMonitor::E_MOUNT_STATUS_UNMOUNTING:
 			LOGD("ummounting path: %s \n", msg);
-			if(sPlayer.isPlaying()){
+			if (sPlayer.isPlaying()) {
 				sIsPlayOK = false;
 				sPlayer.stop();
 				mButtonPlayPtr->setSelected(false);
@@ -307,33 +344,32 @@ public:
 };
 static MyMountListener sMyMountListener;
 
-
-class PlayerMessageListener : public ZKMediaPlayer::IPlayerMessageListener {
+class PlayerMessageListener: public ZKMediaPlayer::IPlayerMessageListener {
 public:
-    virtual void onPlayerMessage(ZKMediaPlayer *pMediaPlayer, int msg, void *pMsgData) {
-    	LOGD("onPlayerMessage: MSG = %d", msg);
-        switch (msg) {
-        case ZKMediaPlayer::E_MSGTYPE_ERROR_INVALID_FILEPATH:
-        case ZKMediaPlayer::E_MSGTYPE_ERROR_MEDIA_ERROR:
-            // 出错消息
-        	sIsPlayOK = false;
-        	mButtonPlayPtr->setSelected(false);
-            break;
+	virtual void onPlayerMessage(ZKMediaPlayer *pMediaPlayer, int msg, void *pMsgData) {
+		LOGD("onPlayerMessage: MSG = %d", msg);
+		switch (msg) {
+		case ZKMediaPlayer::E_MSGTYPE_ERROR_INVALID_FILEPATH:
+		case ZKMediaPlayer::E_MSGTYPE_ERROR_MEDIA_ERROR:
+			// 出错消息
+			sIsPlayOK = false;
+			mButtonPlayPtr->setSelected(false);
+			break;
 
-        case ZKMediaPlayer::E_MSGTYPE_PLAY_STARTED:
-            // 开始播放消息
-        	sIsPlayOK = true;
-        	mButtonPlayPtr->setSelected(true);
-            break;
+		case ZKMediaPlayer::E_MSGTYPE_PLAY_STARTED:
+			// 开始播放消息
+			sIsPlayOK = true;
+			mButtonPlayPtr->setSelected(true);
+			break;
 
-        case ZKMediaPlayer::E_MSGTYPE_PLAY_COMPLETED:
-            // 播放结束消息
-        	sIsPlayOK = false;
-        	mButtonPlayPtr->setSelected(false);
+		case ZKMediaPlayer::E_MSGTYPE_PLAY_COMPLETED:
+			// 播放结束消息
+			sIsPlayOK = false;
+			mButtonPlayPtr->setSelected(false);
 
-            break;
-        }
-    }
+			break;
+		}
+	}
 };
 static PlayerMessageListener sPlayerMessageListener;
 
@@ -342,16 +378,12 @@ static PlayerMessageListener sPlayerMessageListener;
  * 填充数组用于注册定时器
  * 注意：id不能重复
  */
-static S_ACTIVITY_TIMEER REGISTER_ACTIVITY_TIMER_TAB[] = {
-	{0,  30}, //定时器id=0, 时间间隔6秒
-	{1,  1000},
-	{2, 500},
-	{3, 100},
-};
+static S_ACTIVITY_TIMEER REGISTER_ACTIVITY_TIMER_TAB[] = { { 0, 30 }, //定时器id=0, 时间间隔6秒
+		{ 1, 1000 }, { 2, 500 }, { 3, 100 }, };
 
 #define sub(x,y) ((x>y)?(x-y):(y-x))
 
-static void initTimerDisp(){
+static void initTimerDisp() {
 
 //	struct tm *t = TimeHelper::getDateTime();
 //	int year = t->tm_year+1900;
@@ -407,8 +439,8 @@ static void initTimerDisp(){
 /**
  * 当界面构造时触发
  */
-static void onUI_init(){
-    //Tips :添加 UI初始化的显示代码到这里,如:mText1Ptr->setText("123");
+static void onUI_init() {
+	//Tips :添加 UI初始化的显示代码到这里,如:mText1Ptr->setText("123");
 	MOUNTMONITOR->addMountListener(&sMyMountListener);
 	curPos = mWindow1Ptr->getPosition().mTop;
 	sPlayer.setPlayerMessageListener(&sPlayerMessageListener);
@@ -416,7 +448,7 @@ static void onUI_init(){
 	mSeekbar1Ptr->setProgress(0);
 	sIsPlayOK = false;
 	initTimerDisp();
-	if(MOUNTMONITOR->isMount()){
+	if(MOUNTMONITOR->isMount()) {
 		fileList.clear();
 		ScanFile("/mnt/extsd", "mp3");
 		char str[50];
@@ -424,12 +456,17 @@ static void onUI_init(){
 		mTextview19Ptr->setText(str);
 		mTextview19Ptr->setVisible(true);
 	}
-	if(fileList.size() > 0){
+	if(fileList.size() > 0) {
 		mListButtonPtr->setInvalid(false);
-	}else{
+	} else {
 		mListButtonPtr->setInvalid(true);
 	}
 	mSoneNameTextviewPtr->setText("");
+
+	InitLeftList();
+	HASS->LoadInitData();
+	int v = StoragePreferences::getInt("bright", 50);
+	mSeekBarbrightPtr->setProgress(v);
 
 //	UARTCONTEXT->openUart("/dev/ttyS0",115200);
 //	BYTE pData[2];
@@ -439,18 +476,18 @@ static void onUI_init(){
 //	UARTCONTEXT->send(pData, 2);
 
 	//发送消息，初使化第一页的信息
-	char buf[40] = {0};
-	snprintf(buf, sizeof(buf), "{\"type\":\"init\",\"value\":\"page0\"}");
-	sendProtocol(CMDID_INFO, buf, 40);
+//	char buf[40] = {0};
+//	snprintf(buf, sizeof(buf), "{\"type\":\"init\",\"value\":\"page0\"}");
+//	sendProtocol(CMDID_INFO, buf, 40);
 }
 
 /**
  * 当切换到该界面时触发
  */
 static void onUI_intent(const Intent *intentPtr) {
-    if (intentPtr != NULL) {
-        //TODO
-    }
+	if (intentPtr != NULL) {
+		//TODO
+	}
 }
 
 /*
@@ -484,25 +521,25 @@ static void onUI_quit() {
  *         false
  *             停止运行当前定时器
  */
-static bool onUI_Timer(int id){
+static bool onUI_Timer(int id) {
 	switch (id) {
 	case 0:
 
-		if(targetPos != curPos){
+		if (targetPos != curPos) {
 			//LOGD("targetPos %d,curPos:%d",targetPos,curPos);
-			if(sub(targetPos,curPos) > 5){
-				if(targetPos > curPos){
-					curPos += (targetPos-curPos)/2;
+			if (sub(targetPos,curPos) > 5) {
+				if (targetPos > curPos) {
+					curPos += (targetPos - curPos) / 2;
 					LayoutPosition layout = mWindow1Ptr->getPosition();
 					layout.mTop = curPos;
 					mWindow1Ptr->setPosition(layout);
-				}else{
-					curPos -= (curPos-targetPos)/2;
+				} else {
+					curPos -= (curPos - targetPos) / 2;
 					LayoutPosition layout = mWindow1Ptr->getPosition();
 					layout.mTop = curPos;
 					mWindow1Ptr->setPosition(layout);
 				}
-			}else{
+			} else {
 				LayoutPosition layout = mWindow1Ptr->getPosition();
 				curPos = targetPos;
 				layout.mTop = curPos;
@@ -511,43 +548,43 @@ static bool onUI_Timer(int id){
 		}
 		break;
 	case 1: // 1000s;
-		if(sIsPlayOK){
+		if (sIsPlayOK) {
 			int id = sPlayer.getDuration();
 			int cur = sPlayer.getCurrentPosition();
-			if(id > 0){
-				mSeekbar1Ptr->setProgress(cur*100/id);
+			if (id > 0) {
+				mSeekbar1Ptr->setProgress(cur * 100 / id);
 			}
-		}else{
+		} else {
 			mSeekbar1Ptr->setProgress(0);
 		}
 		break;
-	case 2:{
-			if(lastPlayIndex != curPlayIndex && (fileList.size() > 0)){
-				lastPlayIndex = curPlayIndex;
-				string name = fileList.at(curPlayIndex);
-				unsigned int pos = name.rfind("/");
-				if(pos != string::npos){
-					name = name.substr(pos+1, name.length());
-					mSoneNameTextviewPtr->setText(name.c_str());
-				}
+	case 2: {
+		if (lastPlayIndex != curPlayIndex && (fileList.size() > 0)) {
+			lastPlayIndex = curPlayIndex;
+			string name = fileList.at(curPlayIndex);
+			unsigned int pos = name.rfind("/");
+			if (pos != string::npos) {
+				name = name.substr(pos + 1, name.length());
+				mSoneNameTextviewPtr->setText(name.c_str());
 			}
 		}
-			break;
-	case 3:{
+	}
+		break;
+	case 3: {
 		static int sPointer1Angle = 0;
-		if(sPlayer.isPlaying()){
+		if (sPlayer.isPlaying()) {
 			mPointer1Ptr->setTargetAngle(sPointer1Angle);
 			sPointer1Angle = (sPointer1Angle + 3) % 360;
 		}
 	}
-	break;
-		default:
-			break;
+		break;
+	default:
+		break;
 	}
-    return true;
+	return true;
 }
 
-static int lasty = 0,regpos = 0,startY = 0;
+static int lasty = 0, regpos = 0, startY = 0;
 static bool bMove = false;
 
 /**
@@ -560,58 +597,58 @@ static bool bMove = false;
  *            触摸事件将继续传递到控件上
  */
 static bool onmainActivityTouchEvent(const MotionEvent &ev) {
-    switch (ev.mActionStatus) {
-		case MotionEvent::E_ACTION_DOWN://触摸按下
-			//LOGD("时刻 = %ld 坐标  x = %d, y = %d", ev.mEventTime, ev.mX, ev.mY);
+	switch (ev.mActionStatus) {
+	case MotionEvent::E_ACTION_DOWN: //触摸按下
+		//LOGD("时刻 = %ld 坐标  x = %d, y = %d", ev.mEventTime, ev.mX, ev.mY);
 //			lasty = ev.mY;
 //			regpos = curPos;
 //			startY = ev.mY;
-			break;
-		case MotionEvent::E_ACTION_MOVE://触摸滑动
-			//page move
+		break;
+	case MotionEvent::E_ACTION_MOVE:			//触摸滑动
+		//page move
 //			if(sub(ev.mY,lasty) > 10 ){
 //				targetPos = regpos - (lasty - ev.mY);
 //				regpos = targetPos;
 //				lasty = ev.mY;
 //				bMove = true;
 //			}
-			break;
-		case MotionEvent::E_ACTION_UP:  //触摸抬起
-			if(bMove){
-				curPos = mWindow1Ptr->getPosition().mTop;
-				int possize = sizeof(uipos)/sizeof(int);
-				for(int i = 0;i < possize - 1;i++){
-					LOGD("curPos:%d, uipos:%d",curPos,uipos[i]);
-					if((curPos < uipos[i]) && (curPos > uipos[i+1])){
-						if(sub(uipos[i],curPos) < 240){
-							targetPos =uipos[i];
-						}else{
-							targetPos =uipos[i+1];
-						}
-						break;
+		break;
+	case MotionEvent::E_ACTION_UP:  //触摸抬起
+		if (bMove) {
+			curPos = mWindow1Ptr->getPosition().mTop;
+			int possize = sizeof(uipos) / sizeof(int);
+			for (int i = 0; i < possize - 1; i++) {
+				LOGD("curPos:%d, uipos:%d", curPos, uipos[i]);
+				if ((curPos < uipos[i]) && (curPos > uipos[i + 1])) {
+					if (sub(uipos[i],curPos) < 240) {
+						targetPos = uipos[i];
+					} else {
+						targetPos = uipos[i + 1];
 					}
+					break;
 				}
-				bMove =  false;
 			}
-			lasty = -1;
-			break;
-		default:
-			break;
+			bMove = false;
+		}
+		lasty = -1;
+		break;
+	default:
+		break;
 	}
 	return false;
 }
 
 static bool onButtonClick_Button1(ZKButton *pButton) {
-    //LOGD(" ButtonClick Button1 !!!\n");
-    return false;
+	//LOGD(" ButtonClick Button1 !!!\n");
+	return false;
 }
 
 static bool onButtonClick_Button2(ZKButton *pButton) {
-    //LOGD(" ButtonClick Button2 !!!\n");
-	if(fileList.size() > 0){
-		if((curPlayIndex < (fileList.size() - 1))){
+	//LOGD(" ButtonClick Button2 !!!\n");
+	if (fileList.size() > 0) {
+		if ((curPlayIndex < (fileList.size() - 1))) {
 			curPlayIndex++;
-		}else{
+		} else {
 			curPlayIndex = 0;
 		}
 		sPlayer.stop();
@@ -619,14 +656,14 @@ static bool onButtonClick_Button2(ZKButton *pButton) {
 	}
 
 	usleep(200000);
-    return false;
+	return false;
 }
 static bool onButtonClick_Button3(ZKButton *pButton) {
-    //LOGD(" ButtonClick Button3 !!!\n");
-	if(fileList.size() > 0){
-		if(curPlayIndex > 0){
+	//LOGD(" ButtonClick Button3 !!!\n");
+	if (fileList.size() > 0) {
+		if (curPlayIndex > 0) {
 			curPlayIndex--;
-		}else{
+		} else {
 			curPlayIndex = fileList.size() - 1;
 		}
 		sPlayer.stop();
@@ -634,93 +671,73 @@ static bool onButtonClick_Button3(ZKButton *pButton) {
 	}
 
 	usleep(200000);
-    return false;
+	return false;
 }
 
 static void onProgressChanged_Seekbar1(ZKSeekBar *pSeekBar, int progress) {
-    //LOGD(" ProgressChanged Seekbar1 %d !!!\n", progress);
+	//LOGD(" ProgressChanged Seekbar1 %d !!!\n", progress);
 }
 
-static const char* TempTab[]={
-		"  ",
-		"Lo",
-		"16",
-		"17",
-		"18",
-		"19",
-		"20",
-		"21",
-		"22",
-		"23",
-		"24",
-		"25",
-		"26",
-		"27",
-		"28",
-		"29",
-		"Hi",
-		" ",
-		" ",
-};
+static const char* TempTab[] = { "  ", "Lo", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "Hi", " ", " ", };
 static int getListItemCount_ListviewTempture(const ZKListView *pListView) {
-    //LOGD("getListItemCount_ListviewTempture !\n");
-    return sizeof(TempTab)/sizeof(char*);
+	//LOGD("getListItemCount_ListviewTempture !\n");
+	return sizeof(TempTab) / sizeof(char*);
 }
 
-static void obtainListItemData_ListviewTempture(ZKListView *pListView,ZKListView::ZKListItem *pListItem, int index) {
-    //LOGD(" obtainListItemData_ ListviewTempture  !!!\n");
+static void obtainListItemData_ListviewTempture(ZKListView *pListView, ZKListView::ZKListItem *pListItem, int index) {
+	//LOGD(" obtainListItemData_ ListviewTempture  !!!\n");
 	pListItem->setText(TempTab[index]);
 	int first = pListView->getFirstVisibleItemIndex();
-	if(index == first+1){
+	if (index == first + 1) {
 		pListItem->setSelected(true);
-	}else{
+	} else {
 		pListItem->setSelected(false);
 	}
 }
 
 static void onListItemClick_ListviewTempture(ZKListView *pListView, int index, int id) {
-    //LOGD(" onListItemClick_ ListviewTempture  !!!\n");
-	pListView->setSelection(index-1);
+	//LOGD(" onListItemClick_ ListviewTempture  !!!\n");
+	pListView->setSelection(index - 1);
 
 }
 static bool onButtonClick_Button4(ZKButton *pButton) {
-    //LOGD(" ButtonClick Button4 !!!\n");
-    return false;
+	//LOGD(" ButtonClick Button4 !!!\n");
+	return false;
 }
 
 static bool onButtonClick_Button5(ZKButton *pButton) {
-    //LOGD(" ButtonClick Button5 !!!\n");
-    return false;
+	//LOGD(" ButtonClick Button5 !!!\n");
+	return false;
 }
 
 static bool onButtonClick_Button6(ZKButton *pButton) {
-    //LOGD(" ButtonClick Button6 !!!\n");
-    return false;
+	//LOGD(" ButtonClick Button6 !!!\n");
+	return false;
 }
 
 static bool onButtonClick_Button7(ZKButton *pButton) {
-    //LOGD(" ButtonClick Button7 !!!\n");
-    return false;
+	//LOGD(" ButtonClick Button7 !!!\n");
+	return false;
 }
 
 static bool onButtonClick_Button8(ZKButton *pButton) {
-    //LOGD(" ButtonClick Button8 !!!\n");
-    return false;
+	//LOGD(" ButtonClick Button8 !!!\n");
+	return false;
 }
 
 static bool onButtonClick_Button9(ZKButton *pButton) {
-    //LOGD(" ButtonClick Button9 !!!\n");
-    return false;
+	//LOGD(" ButtonClick Button9 !!!\n");
+	return false;
 }
 static bool onButtonClick_ButtonPlay(ZKButton *pButton) {
-    //LOGD(" ButtonClick ButtonPlay !!!\n");
+	//LOGD(" ButtonClick ButtonPlay !!!\n");
 	if (!sIsPlayOK) {
-		if(fileList.size() > 0){
+		if (fileList.size() > 0) {
 			sPlayer.play(fileList.at(curPlayIndex).c_str());
 			string name = fileList.at(curPlayIndex);
 			unsigned int pos = name.rfind("/");
-			if(pos != string::npos){
-				name = name.substr(pos+1, name.length());
+			if (pos != string::npos) {
+				name = name.substr(pos + 1, name.length());
 				mSoneNameTextviewPtr->setText(name.c_str());
 			}
 		}
@@ -735,93 +752,87 @@ static bool onButtonClick_ButtonPlay(ZKButton *pButton) {
 		}
 	}
 
-
-    return false;
+	return false;
 }
-static const char* modeTab[]{
-		"0","影院模式",
-		"1","娱乐模式",
-		"2","在家模式",
-		"3","阅读模式",
-		"4","离家模式",
-		"5","温馨模式"
-};
+static const char* modeTab[] { "0", "影院模式", "1", "娱乐模式", "2", "在家模式", "3", "阅读模式", "4", "离家模式", "5", "温馨模式" };
 static int selMode = 0;
 static int getListItemCount_ListViewMode(const ZKListView *pListView) {
-    //LOGD("getListItemCount_ListViewMode !\n");
-    return 6;
+	//LOGD("getListItemCount_ListViewMode !\n");
+	return 6;
 }
 
-static void obtainListItemData_ListViewMode(ZKListView *pListView,ZKListView::ZKListItem *pListItem, int index) {
-    //LOGD(" obtainListItemData_ ListViewMode  !!!\n");
-	pListItem->setText(modeTab[index*2+1]);
+static void obtainListItemData_ListViewMode(ZKListView *pListView, ZKListView::ZKListItem *pListItem, int index) {
+	//LOGD(" obtainListItemData_ ListViewMode  !!!\n");
+	pListItem->setText(modeTab[index * 2 + 1]);
 	ZKListView::ZKListSubItem* subitem = pListItem->findSubItemByID(ID_MAIN_SubItem3);
-	subitem->setText(modeTab[index*2]);
-	if(selMode ==  index){
+	subitem->setText(modeTab[index * 2]);
+	if (selMode == index) {
 		pListItem->setBackgroundColor(0x00009789);
-	}else{
+	} else {
 		pListItem->setBackgroundColor(0x00607E8C);
 	}
 }
 
 static void onListItemClick_ListViewMode(ZKListView *pListView, int index, int id) {
-    //LOGD(" onListItemClick_ ListViewMode  !!!\n");
+	//LOGD(" onListItemClick_ ListViewMode  !!!\n");
 	selMode = index;
-	mTextviewModePtr->setText(modeTab[index*2]);
+	mTextviewModePtr->setText(modeTab[index * 2]);
 }
 static bool onButtonClick_Button10(ZKButton *pButton) {
-    //LOGD(" ButtonClick Button10 !!!\n");
-    return false;
+	//LOGD(" ButtonClick Button10 !!!\n");
+	return false;
 }
 
 static void onProgressChanged_Seekbar2(ZKSeekBar *pSeekBar, int progress) {
-    //LOGD(" ProgressChanged Seekbar2 %d !!!\n", progress);
-	float vol = ((float)progress)/10;
+	//LOGD(" ProgressChanged Seekbar2 %d !!!\n", progress);
+	float vol = ((float) progress) / 10;
 	sPlayer.setVolume(vol, vol);
 
 }
 
 static int getListItemCount_ListviewHour(const ZKListView *pListView) {
-    //LOGD(" getListItemCount_ ListviewHour  !!!\n");
-    return 24;
+	//LOGD(" getListItemCount_ ListviewHour  !!!\n");
+	return 24;
 }
-static bool ontimeActivityTouchEvent(const MotionEvent& ev){
+static bool ontimeActivityTouchEvent(const MotionEvent& ev) {
 	return false;
 }
-static void obtainListItemData_ListviewHour(ZKListView *pListView,ZKListView::ZKListItem *pListItem, int index) {
-    //LOGD(" obtainListItemData_ ListviewHour  !!!\n");
+static void obtainListItemData_ListviewHour(ZKListView *pListView, ZKListView::ZKListItem *pListItem, int index) {
+	//LOGD(" obtainListItemData_ ListviewHour  !!!\n");
 	pListItem->setText(index);
 	int first = pListView->getFirstVisibleItemIndex();
-	if((first == pListView->getListItemCount()-1) && (index == 0)){
+	if ((first == pListView->getListItemCount() - 1) && (index == 0)) {
 		pListItem->setSelected(true);
-	}else if(index == first+1){
+	} else if (index == first + 1) {
 		pListItem->setSelected(true);
-	}else{
+	} else {
 		pListItem->setSelected(false);
 	}
 }
 
 static void onListItemClick_ListviewHour(ZKListView *pListView, int index, int id) {
-    //LOGD(" onListItemClick_ ListviewHour  !!!\n");
-	if(index == 0) index = 24;
-	else if(index == 24) index = 1;
-	pListView->setSelection(index-1);
+	//LOGD(" onListItemClick_ ListviewHour  !!!\n");
+	if (index == 0)
+		index = 24;
+	else if (index == 24)
+		index = 1;
+	pListView->setSelection(index - 1);
 }
 
 static int getListItemCount_ListviewMin(const ZKListView *pListView) {
-    //LOGD(" getListItemCount_ ListviewMin  !!!\n");
-    return 60;
+	//LOGD(" getListItemCount_ ListviewMin  !!!\n");
+	return 60;
 }
 
-static void obtainListItemData_ListviewMin(ZKListView *pListView,ZKListView::ZKListItem *pListItem, int index) {
-    //LOGD(" obtainListItemData_ ListviewMin  !!!\n");
+static void obtainListItemData_ListviewMin(ZKListView *pListView, ZKListView::ZKListItem *pListItem, int index) {
+	//LOGD(" obtainListItemData_ ListviewMin  !!!\n");
 	pListItem->setText(index);
 	int first = pListView->getFirstVisibleItemIndex();
-	if((first == pListView->getListItemCount()-1) && (index == 0)){
+	if ((first == pListView->getListItemCount() - 1) && (index == 0)) {
 		pListItem->setSelected(true);
-	}else if(index == first+1){
+	} else if (index == first + 1) {
 		pListItem->setSelected(true);
-	}else{
+	} else {
 		pListItem->setSelected(false);
 	}
 }
@@ -916,51 +927,39 @@ static void obtainListItemData_ListviewMin(ZKListView *pListView,ZKListView::ZKL
 //	pListView->setSelection(index-1);
 //}
 static bool onButtonClick_VolButton(ZKButton *pButton) {
-    //LOGD(" ButtonClick VolButton !!!\n");
-	if(mVolWindowPtr->isWndShow()){
+	//LOGD(" ButtonClick VolButton !!!\n");
+	if (mVolWindowPtr->isWndShow()) {
 		mVolWindowPtr->hideWnd();
-	}else{
+	} else {
 		mVolWindowPtr->showWnd();
 	}
-    return false;
-}
-static bool onButtonClick_Button11(ZKButton *pButton) {
-    //LOGD(" ButtonClick Button11 !!!\n");
-//mListWindowPtr->showWnd();
-	EASYUICONTEXT->openActivity("ZKSettingActivity");
-
-	int v = BRIGHTNESSHELPER->getBrightness();
-	LOGD(" current bright:%d" ,v);
-	//将屏幕亮度调整为0~100
-	BRIGHTNESSHELPER->setBrightness(80);
-
-    return false;
+	return false;
 }
 static int getListItemCount_MusicListview(const ZKListView *pListView) {
-    //LOGD("getListItemCount_MusicListview !\n");
-    return fileList.size();
+	//LOGD("getListItemCount_MusicListview !\n");
+	return fileList.size();
 }
 
-static void obtainListItemData_MusicListview(ZKListView *pListView,ZKListView::ZKListItem *pListItem, int index) {
-    //LOGD(" obtainListItemData_ MusicListview  !!!\n");
+static void obtainListItemData_MusicListview(ZKListView *pListView, ZKListView::ZKListItem *pListItem, int index) {
+	//LOGD(" obtainListItemData_ MusicListview  !!!\n");
 	string name = fileList.at(index);
 	unsigned int pos = name.rfind("/");
-	if(pos != string::npos){
-		name = name.substr(pos+1, name.length());
+	if (pos != string::npos) {
+		name = name.substr(pos + 1, name.length());
 		pListItem->setText(name.c_str());
 	}
-	if(index == curPlayIndex){
+	if (index == curPlayIndex) {
 		pListItem->setTextColor(0xffff00);
-	}else{
+	} else {
 		pListItem->setTextColor(0xffffff);
 	}
 }
 
 static void onListItemClick_MusicListview(ZKListView *pListView, int index, int id) {
-    //LOGD(" onListItemClick_ MusicListview  !!!\n");
-	if(fileList.size() > 0){
+	//LOGD(" onListItemClick_ MusicListview  !!!\n");
+	if (fileList.size() > 0) {
 		string name = fileList.at(index);
-		if(!name.empty()){
+		if (!name.empty()) {
 			sPlayer.stop();
 			sPlayer.play(name.c_str());
 			curPlayIndex = index;
@@ -969,15 +968,23 @@ static void onListItemClick_MusicListview(ZKListView *pListView, int index, int 
 	}
 }
 static bool onButtonClick_ListButton(ZKButton *pButton) {
-    //LOGD(" ButtonClick ListButton !!!\n");
+	//LOGD(" ButtonClick ListButton !!!\n");
 	mListWindowPtr->showWnd();
-    return false;
+	return false;
 }
 
+static void onHassDataUpdate(int type) {
+	if (type == 0)
+		InitLeftList();
+	else {
+		if (initfunlist[listSel] != NULL)
+			initfunlist[listSel](HASS->getConfig(listSel));
+		}
+	}
 
-/**
- * 收到串口数据
- */
+	/**
+	 * 收到串口数据
+	 */
 static void onProtocolDataUpdate(const SProtocolData &data) {
 
 	string s2 = string(data.receive, 0, data.reclen);
@@ -992,12 +999,27 @@ static void onProtocolDataUpdate(const SProtocolData &data) {
 		if (root2.isMember("type"))
 			type = root2["type"].asString();
 
-		//分别处理
-		if (type == "page0")
-			DealPage0(root2);
-		if (type == "page0_init")
-			DealPage0_init(root2);
-		if (type == "inner")
-			inner_init(root2);
-   }
+//		//分别处理
+//		if (type == "page0")
+//			DealPage0(root2);
+//		if (type == "page0_init")
+//			DealPage0_init(root2);
+//		if (type == "inner")
+//			inner_init(root2);
+	}
+}
+static void onProgressChanged_SeekBar1(ZKSeekBar *pSeekBar, int progress) {
+	//LOGD(" ProgressChanged SeekBar1 %d !!!\n", progress);
+}
+static bool onButtonClick_Button11(ZKButton *pButton) {
+	LOGD(" ButtonClick Button11 !!!\n");
+	return false;
+}
+
+static void onEditTextChanged_txtHassIP(const std::string &text) {
+	//LOGD(" onEditTextChanged_ txtHassIP %s !!!\n", text.c_str());
+}
+
+static void onEditTextChanged_txtCfgName(const std::string &text) {
+	//LOGD(" onEditTextChanged_ txtCfgName %s !!!\n", text.c_str());
 }

@@ -1,13 +1,17 @@
 #include "entry/EasyUIContext.h"
 #include "uart/UartContext.h"
 #include "manager/ConfigManager.h"
+#include "hass/hass.h"
 #ifdef __cplusplus
 extern "C" {
 #endif  /* __cplusplus */
 
 void onEasyUIInit(EasyUIContext *pContext) {
-	// 初始化时打开串口
+	// 锟斤拷始锟斤拷时锟津开达拷锟斤拷
 	UARTCONTEXT->openUart(CONFIGMANAGER->getUartName().c_str(), CONFIGMANAGER->getUartBaudRate());
+
+	HASS->run("hassconnect");
+
 }
 
 void onEasyUIDeinit(EasyUIContext *pContext) {
@@ -15,6 +19,7 @@ void onEasyUIDeinit(EasyUIContext *pContext) {
 }
 
 const char* onStartupApp(EasyUIContext *pContext) {
+//	return "mainPageActivity";
 	return "mainActivity";
 }
 
