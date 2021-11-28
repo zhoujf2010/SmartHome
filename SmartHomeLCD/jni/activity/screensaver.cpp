@@ -2,6 +2,8 @@
 #include "entry/EasyUIContext.h"
 
 /*TAG:GlobalVariable全局变量*/
+static ZKTextView* mtxtWethNowPtr;
+static ZKTextView* mTextView1Ptr;
 static ZKTextView* mTextviewDatePtr;
 static ZKTextView* mTextviewTimePtr;
 static screensaver* mscreensaverPtr;
@@ -118,6 +120,8 @@ const char* screensaver::getAppName() const{
 //TAG:onCreate
 void screensaver::onCreate() {
 	BaseApp::onCreate();
+    mtxtWethNowPtr = (ZKTextView*)findControlByID(ID_SCREENSAVER_txtWethNow);
+    mTextView1Ptr = (ZKTextView*)findControlByID(ID_SCREENSAVER_TextView1);
     mTextviewDatePtr = (ZKTextView*)findControlByID(ID_SCREENSAVER_TextviewDate);
     mTextviewTimePtr = (ZKTextView*)findControlByID(ID_SCREENSAVER_TextviewTime);
 	mscreensaverPtr = this;

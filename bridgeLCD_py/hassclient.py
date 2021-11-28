@@ -279,6 +279,19 @@ class HomeAssistantClient:
             return state_obj
         return None
 
+    def get_attribute(self, entity_id: str) -> dict:
+        """
+        Get state(obj) of a Home Assistant entity.
+            :param entity_id: The entity id for which the state must be returned.
+            :param attribute: The attribute to return from the state object.
+        """
+        if not self.connected:
+            LOGGER.warning("Connection is not yet ready.")
+        state_obj = self._states.get(entity_id)
+        if state_obj:
+            return state_obj["attributes"]
+        return None
+
     async def call_service(self, domain: str, service: str, service_data: dict = None):
         """
         Call service on Home Assistant.

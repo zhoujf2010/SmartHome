@@ -89,6 +89,12 @@ class SocketServer():
                             conn.send(strtt.encode('utf8'))
                             conn.close()
                             break # 单次连接，断开连接后直接结束
+                        if data.startswith("GETStatus"):
+                            dt = await self.getAPIData(data.split('\r')[0][3:][:-8].strip()[1:])
+                            strtt = 'HTTP/1.1 200 OK\r\n\r\n %s' % dt
+                            conn.send(strtt.encode('utf8'))
+                            conn.close()
+                            break # 单次连接，断开连接后直接结束
                         self.loop.create_task(self.hassclient.send_command(json.loads(data)))
             except socket.error as e:
                 _LOGGER.error('socket Receive error:' + str(e))
@@ -97,6 +103,19 @@ class SocketServer():
             self.clientList.pop(conn)
 
     async def receiveHassMsg(self, data):
+        if "result" in data:
+            if "views" in data["result"]: #查询了界面信息，返查状态
+                for item in data["result"]["views"]:
+                    for card in item["cards"]:
+                        entity = card["entity"]
+                        if card["type"] =="weather-forecast":
+                            card["state"] = self.hassclient.get_attribute(entity)
+                            card["state"]["state"] = self.hassclient.get_state(entity)
+                        else:
+                            card["state"] = self.hassclient.get_state(entity)
+                # print(json.dumps(data["result"],ensure_ascii=False))
+                data["date"] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) 
+
         #收到hass消息发送至客户端
         dt = json.dumps(data)#{'type': type, 'data': data})
         _LOGGER.debug("sendto screen[%d]:"%len(self.clientList))

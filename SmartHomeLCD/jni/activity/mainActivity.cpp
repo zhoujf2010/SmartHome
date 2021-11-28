@@ -4,6 +4,14 @@
 #include "mainActivity.h"
 
 /*TAG:GlobalVariable全局变量*/
+static ZKTextView* mtxtWethNowPtr;
+static ZKTextView* mTextView9Ptr;
+static ZKListView* mlstHistoryPtr;
+static ZKTextView* mTextView8Ptr;
+static ZKTextView* mTextView7Ptr;
+static ZKTextView* mTextView6Ptr;
+static ZKButton* mbtnUpdatePtr;
+static ZKWindow* mWinClimat6Ptr;
 static ZKWindow* mWinMusicPtr;
 static ZKWindow* mWinMode3Ptr;
 static ZKWindow* mWinCurtain2Ptr;
@@ -103,6 +111,7 @@ typedef struct {
 
 /*TAG:ButtonCallbackTab按键映射表*/
 static S_ButtonCallback sButtonCallbackTab[] = {
+    ID_MAIN_btnUpdate, onButtonClick_btnUpdate,
     ID_MAIN_btnReboot, onButtonClick_btnReboot,
     ID_MAIN_btnCfgsave, onButtonClick_btnCfgsave,
     ID_MAIN_btnReloadCfg, onButtonClick_btnReloadCfg,
@@ -148,6 +157,7 @@ typedef struct {
 }S_ListViewFunctionsCallback;
 /*TAG:ListViewFunctionsCallback*/
 static S_ListViewFunctionsCallback SListViewFunctionsCallbackTab[] = {
+    ID_MAIN_lstHistory, getListItemCount_lstHistory, obtainListItemData_lstHistory, onListItemClick_lstHistory,
     ID_MAIN_Listview2, getListItemCount_Listview2, obtainListItemData_Listview2, onListItemClick_Listview2,
     ID_MAIN_ListviewTempture, getListItemCount_ListviewTempture, obtainListItemData_ListviewTempture, onListItemClick_ListviewTempture,
     ID_MAIN_ListViewMode, getListItemCount_ListViewMode, obtainListItemData_ListViewMode, onListItemClick_ListViewMode,
@@ -211,6 +221,14 @@ const char* mainActivity::getAppName() const{
 //TAG:onCreate
 void mainActivity::onCreate() {
 	Activity::onCreate();
+    mtxtWethNowPtr = (ZKTextView*)findControlByID(ID_MAIN_txtWethNow);
+    mTextView9Ptr = (ZKTextView*)findControlByID(ID_MAIN_TextView9);
+    mlstHistoryPtr = (ZKListView*)findControlByID(ID_MAIN_lstHistory);if(mlstHistoryPtr!= NULL){mlstHistoryPtr->setListAdapter(this);mlstHistoryPtr->setItemClickListener(this);}
+    mTextView8Ptr = (ZKTextView*)findControlByID(ID_MAIN_TextView8);
+    mTextView7Ptr = (ZKTextView*)findControlByID(ID_MAIN_TextView7);
+    mTextView6Ptr = (ZKTextView*)findControlByID(ID_MAIN_TextView6);
+    mbtnUpdatePtr = (ZKButton*)findControlByID(ID_MAIN_btnUpdate);
+    mWinClimat6Ptr = (ZKWindow*)findControlByID(ID_MAIN_WinClimat6);
     mWinMusicPtr = (ZKWindow*)findControlByID(ID_MAIN_WinMusic);
     mWinMode3Ptr = (ZKWindow*)findControlByID(ID_MAIN_WinMode3);
     mWinCurtain2Ptr = (ZKWindow*)findControlByID(ID_MAIN_WinCurtain2);

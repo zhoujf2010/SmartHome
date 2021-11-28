@@ -21,6 +21,8 @@
 #include "control/ZKVideoView.h"
 #include "window/ZKSlideWindow.h"
 /*TAG:Macro宏ID*/
+#define ID_SCREENSAVER_txtWethNow    50026
+#define ID_SCREENSAVER_TextView1    50003
 #define ID_SCREENSAVER_TextviewDate    50002
 #define ID_SCREENSAVER_TextviewTime    50001
 /*TAG:Macro宏ID END*/

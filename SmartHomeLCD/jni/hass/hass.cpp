@@ -10,8 +10,8 @@
 hass::hass() {
 	connected = false;
 	pagenum = -1;
-	ipaddr = StoragePreferences::getString("ipaddr", "192.168.3.168:8082");//"192.168.3.168:8082";
-	cfgName =StoragePreferences::getString("cfgName", "lovelace-led1");//"lovelace-led1";
+	ipaddr = StoragePreferences::getString("ipaddr", "192.168.3.168:8082"); //"192.168.3.168:8082";
+	cfgName = StoragePreferences::getString("cfgName", "lovelace-led1"); //"lovelace-led1";
 }
 
 hass::~hass() {
@@ -90,8 +90,6 @@ hass* hass::getInstance() {
 void hass::LoadInitData() {
 	std::string req = "{\"type\": \"lovelace/config\", \"url_path\": \"" + this->cfgName + "\"}";
 	this->send(req.c_str());
-	std::string req2 = "{\"type\": \"get_states\"}";
-	this->send(req2.c_str());
 	LOGD(" 发送初使化信号");
 }
 
@@ -124,65 +122,126 @@ void hass::invokeScreen(int type) {
 }
 
 void hass::DealMsg(std::string str) {
+	if (str =="")
+		return ;
+
+//	if (str[0] !='{' || str[str.length()-1] != "}"){
+//		LOGD("数据不完整:%s", str.c_str());
+//		LOGD("数据不完整1:%s", str[0]);
+//		LOGD("数据不完整2:%s", str[str.length()-1]);
+//		return ;
+//	}
+
 //	LOGD("income message:%s", str.c_str());
 	//解析json
 	Json::Reader reader;
 	Json::Value root;
-	if (reader.parse(str, root, false)) {
-		std::string type = root["type"].asString();
-		if (type == "result") {	//结果查询类
-			std::string success = root["success"].asString();
-			if (success != "true")
-				return;
-			Json::Value data = root["result"];
+	if (!reader.parse(str, root, false)) {
+		LOGD("unknown message:%s", str.c_str());
+		return;
+	}
 
-			if (data.isMember("views")) { //获取配置信息
-				Json::Value views = data["views"];
-				pageconfig = views;
-				pagenum = views.size(); //读出视图数量
-				LOGD("解析成功,屏数：%d", pagenum);
+	std::string type = root["type"].asString();
+	if (type == "result") {	//结果查询类
+		std::string success = root["success"].asString();
+		if (success != "true")
+			return;
+		Json::Value data = root["result"];
 
-				for (Json::ArrayIndex i = 0; i < views.size(); ++i) {
-					Json::Value cards = views[i]["cards"];
-					for (Json::ArrayIndex j = 0; j < cards.size(); ++j) {
-						cards[j]["state"] = "unknown";
-					}
-					views[i]["cards"] = cards;
+		if (data.isMember("views")) { //获取配置信息
+			Json::Value views = data["views"];
+			pageconfig = views;
+			pagenum = views.size(); //读出视图数量
+			LOGD("解析成功,屏数：%d", pagenum);
+
+			//时间设定
+			TimeHelper::setDateTime(root["date"].asString().c_str());
+			LOGD("时间定定为：%s", root["date"].asString().c_str());
+
+			for (Json::ArrayIndex i = 0; i < views.size(); ++i) {
+				Json::Value cards = views[i]["cards"];
+				for (Json::ArrayIndex j = 0; j < cards.size(); ++j) {
+					cards[j]["state"] = "unknown";
 				}
-				this->invokeScreen(0);
+				views[i]["cards"] = cards;
+			}
+			this->invokeScreen(0);
+			//获取状态
+//				std::string req2 = "{\"type\": \"get_states\"}";
+//				this->send(req2.c_str());
+		}
+	} else if (type == "event") { //事件处理
+		Json::Value event = root["event"];
+		std::string event_type = event["event_type"].asString();
+		if (event_type == "state_changed") {
+			std::string entityid = event["data"]["entity_id"].asString();
+			std::string newstate = event["data"]["new_state"]["state"].asString();
+
+			LOGD("data==>%s,%s", entityid.c_str(), newstate.c_str());
+
+			//遍历记录
+			for (Json::ArrayIndex i = 0; i < pageconfig.size(); ++i) {
+				Json::Value cards = pageconfig[i]["cards"];
+				for (Json::ArrayIndex j = 0; j < cards.size(); ++j) {
+					if (cards[j]["entity"].asString() == entityid) {
+						cards[j]["state"] = newstate;
+					}
+				}
+				pageconfig[i]["cards"] = cards;
+			}
+//			LOGD("生成的json字符串为: %s", pageconfig.toStyledString().c_str());
+			this->invokeScreen(1);
+		}
+	} else
+		LOGD("unknown type:%s", type.c_str());
+}
+
+void hass::saveCfg() {
+	StoragePreferences::putString("ipaddr", ipaddr);
+	StoragePreferences::putString("cfgName", cfgName);
+}
+
+static std::string* lst = new std::string[15]{"clear-night","cloudy","exceptional","fog",
+	"hail","lightning","lightning-rainy","partlycloudy","pouring",
+	"rainy","snowy","snowy-rainy","sunny","windy","windy-variant"};
+
+static std::string* chslst = new std::string[15]{"晴","多云","异常","雾",
+	"冰雹","闪电","闪电雨","局部多云","暴雨",
+	"雨","雪","雨夹雪","睛","风","大风"};
+
+
+int findIndex(std::string weath){
+	int find = 0;
+		for (int i =0;i < 15;i++){
+			if (lst[i] == weath)
+			{
+				find = i;
+				break;
 			}
 		}
-		else if (type == "event") { //事件处理
-			Json::Value event = root["event"];
-			std::string event_type = event["event_type"].asString();
-			if (event_type == "state_changed") {
-				std::string entityid = event["data"]["entity_id"].asString();
-				std::string newstate = event["data"]["new_state"]["state"].asString();
+		return find;
+}
 
-				LOGD("data==>%s,%s", entityid.c_str(), newstate.c_str());
+std::string hass::getWeatherData(std::string weath){
+	int find = findIndex(weath);
+	char t[1];
+	t[0] = 'a' + find;
+//	char t = 'a' + find;
 
-				//遍历记录
-				for (Json::ArrayIndex i = 0; i < pageconfig.size(); ++i) {
-					Json::Value cards = pageconfig[i]["cards"];
-					for (Json::ArrayIndex j = 0; j < cards.size(); ++j) {
-						if (cards[j]["entity"].asString() == entityid) {
-							cards[j]["state"] = newstate;
-						}
-					}
-					pageconfig[i]["cards"] = cards;
-				}
-//			LOGD("生成的json字符串为: %s", pageconfig.toStyledString().c_str());
-				this->invokeScreen(1);
-			}
-		} else
-			LOGD("unknown type:%s", type.c_str());
-	} else
-		LOGD("unknown message:%s", str.c_str());
-
+	return std::string(t,1);
 }
 
 
-void hass::saveCfg(){
-	StoragePreferences::putString("ipaddr", ipaddr);
-	StoragePreferences::putString("cfgName", cfgName);
+std::string hass::getWeatherChsData(std::string weath){
+	int find = findIndex(weath);
+	return chslst[find];
+}
+
+//格式化温度
+std::string hass::getTemp(std::string temp){
+	double f = atof(temp.c_str());
+
+    char tmpstr[6];
+    sprintf(tmpstr, "%.0f",f);
+	return std::string(tmpstr);
 }

@@ -26,6 +26,19 @@
 #include "window/ZKSlideWindow.h"
 
 /*TAG:Macro宏ID*/
+#define ID_MAIN_txtWethNow    50026
+#define ID_MAIN_TextView9    50030
+#define ID_MAIN_SubItem8    24005
+#define ID_MAIN_SubItem7    24004
+#define ID_MAIN_SubItem6    24003
+#define ID_MAIN_SubItem5    24002
+#define ID_MAIN_SubItem4    24001
+#define ID_MAIN_lstHistory    80005
+#define ID_MAIN_TextView8    50029
+#define ID_MAIN_TextView7    50028
+#define ID_MAIN_TextView6    50027
+#define ID_MAIN_btnUpdate    20021
+#define ID_MAIN_WinClimat6    110009
 #define ID_MAIN_WinMusic    110002
 #define ID_MAIN_WinMode3    110003
 #define ID_MAIN_WinCurtain2    110006

@@ -9,6 +9,9 @@
 #include "storage/StoragePreferences.h"
 #include<unistd.h>
 #include<sys/reboot.h>
+#include "os/UpgradeMonitor.h"
+#include "utils/TimeHelper.h"
+
 
 #define  WIFIMANAGER    NETMANAGER->getWifiManager()
 
@@ -50,6 +53,7 @@
 
 static void DealPage0_init(Json::Value root2); //灯初使化页
 static void DealPage5_init(Json::Value root2); //配置初使化页
+static void DealPage4_init(Json::Value root2); //天气初使化页
 
 /******************* 左侧选择栏 *******************************/
 typedef void (*InitFunction)(Json::Value root);
@@ -102,6 +106,12 @@ static void InitLeftList() {
 			IconText[i * 2] = '3';
 			IconText[i * 2 + 1] = 'd';
 			initfunlist[i] = NULL;
+			LOGD("---====---");
+		} else if (type == "4") { //天气 -2880
+			uipos[i] = -480 * 6;
+			IconText[i * 2] = '6';
+			IconText[i * 2 + 1] = 'g';
+			initfunlist[i] = DealPage4_init;
 		} else {
 			uipos[i] = 0;
 			IconText[i * 2] = '0';
@@ -109,7 +119,7 @@ static void InitLeftList() {
 			initfunlist[i] = NULL;
 		}
 	}
-	uipos[pagenum - 1] = -480 * 5; //配置页
+	uipos[pagenum - 1] = -480 * 5; //配置页 2,400
 	initfunlist[pagenum - 1] = DealPage5_init;
 	IconText[(pagenum - 1) * 2] = '5';
 	IconText[(pagenum - 1) * 2 + 1] = 'f';
@@ -159,11 +169,19 @@ static void DealPage0_init(Json::Value root2) {
 	//清空
 	for (int i = 0; i < 9; ++i)
 		LampName[i] = "";
+
+//	string entities ="";
 	//获取标题及状态值
 	for (Json::ArrayIndex i = 0; i < cards.size(); ++i) {
 		LampName[i] = cards[i]["name"].asString();
 		LampSel[i] = cards[i]["state"].asString() == "on";
+//		entities += "\"" + cards[i]["entity_id"].asString() + "\",";
 	}
+
+//	if (entities.length() >0)
+//		entities = entities.substr(0, entities.length()-2); //去掉,
+//	string cmd = "GETStatus:" + entities;
+//	HASS->send(cmd.c_str()); //获取当前页的状态
 
 	mListview2Ptr->refreshListView();
 }
@@ -188,14 +206,69 @@ static void onListItemClick_Listview2(ZKListView *pListView, int index, int id) 
 
 /******************* 第2页(空调,POS:480)*******************************/
 
+
+/******************* 第4页(天气,POS:-2880)*******************************/
+Json::Value weathercards;
+
+static void DealPage4_init(Json::Value root2) {
+	Json::Value cards = root2["cards"];
+	//获取标题及状态值
+	for (Json::ArrayIndex i = 0; i < cards.size(); ++i) {
+		if (cards[i]["type"].asString() == "weather-forecast"){
+			weathercards = cards[i]["state"];
+		}
+	}
+	//当前天气
+	string weathname = weathercards["state"].asString();
+	mtxtWethNowPtr->setText(HASS->getWeatherData(weathname));
+	mTextView6Ptr->setText(HASS->getWeatherChsData(weathname));
+	mTextView7Ptr->setText(weathercards["temperature"].asString());
+
+	//当前时间
+    char timeStr[64];
+    struct tm *t = TimeHelper::getDateTime();
+    static const char *day[] = { "日", "一", "二", "三", "四", "五", "六" };
+    sprintf(timeStr, "%d年%02d月%02d日  星期%s", 1900 + t->tm_year, t->tm_mon + 1, t->tm_mday,day[t->tm_wday]);
+    mTextView9Ptr->setText(timeStr); // 注意修改控件名称
+
+	mlstHistoryPtr->refreshListView();
+}
+
+static int getListItemCount_lstHistory(const ZKListView *pListView) {
+    return weathercards["forecast"].size();
+}
+
+static void obtainListItemData_lstHistory(ZKListView *pListView,ZKListView::ZKListItem *pListItem, int index) {
+	//显示状态
+	ZKListView::ZKListSubItem* subitem = pListItem->findSubItemByID(ID_MAIN_SubItem4);
+	string weather = weathercards["forecast"][index]["condition"].asString();
+	subitem->setText(HASS->getWeatherData(weather));
+
+	//最高气温
+	string tmp = HASS->getTemp(weathercards["forecast"][index]["temperature"].asString());
+	ZKListView::ZKListSubItem* subitem2 = pListItem->findSubItemByID(ID_MAIN_SubItem6);
+	subitem2->setText(tmp+"°C");
+
+	//最低气温
+	string tmp2 = HASS->getTemp(weathercards["forecast"][index]["templow"].asString());
+	ZKListView::ZKListSubItem* subitem3 = pListItem->findSubItemByID(ID_MAIN_SubItem8);
+	subitem3->setText(tmp2+"°C");
+
+	//周几
+    struct tm *t = TimeHelper::getDateTime();
+    char timeStr[6];
+    static const char *day[] = { "日", "一", "二", "三", "四", "五", "六" };
+    LOGD("周%d",(t->tm_wday+index+1)%7);
+    sprintf(timeStr, "周%s",day[(t->tm_wday+index+1)%7]);
+	ZKListView::ZKListSubItem* subitem4 = pListItem->findSubItemByID(ID_MAIN_SubItem5);
+	subitem4->setText(string(timeStr,6));
+}
+
+static void onListItemClick_lstHistory(ZKListView *pListView, int index, int id) {
+}
+
 /******************* 设置页面 *******************************/
 static void DealPage5_init(Json::Value root2) {
-//	string msg = root2["msg"].asString();
-//	string result = root2["result"].asString();
-//	LOGD("msg->%s,result->%s", msg.c_str(), result.c_str());
-//	if (msg == "ip")
-//		mtxtTextinfoPtr->setText(result);
-
 	mtxtTextinfoPtr->setText(WIFIMANAGER->getIp());
 
 	int v = BRIGHTNESSHELPER->getBrightness();
@@ -208,18 +281,12 @@ static void DealPage5_init(Json::Value root2) {
 }
 
 static void onProgressChanged_SeekBarbright(ZKSeekBar *pSeekBar, int progress) {
-	//LOGD(" ProgressChanged SeekBarbright %d !!!\n", progress);
 	BRIGHTNESSHELPER->setBrightness(progress);
 }
 
 //按钮 设置网络
 static bool onButtonClick_btnGetIP(ZKButton *pButton) {
 	EASYUICONTEXT->openActivity("ZKSettingActivity");
-
-//	int v = BRIGHTNESSHELPER->getBrightness();
-//	LOGD(" current bright:%d", v);
-//	//将屏幕亮度调整为0~100
-//	BRIGHTNESSHELPER->setBrightness(80);
 	return false;
 }
 
@@ -231,10 +298,14 @@ static bool onButtonClick_btnReloadCfg(ZKButton *pButton) {
 
 //配置保存
 static bool onButtonClick_btnCfgsave(ZKButton *pButton) {
+	HASS->ipaddr = mtxtHassIPPtr->getText();
+	HASS->cfgName = mtxtCfgNamePtr->getText();
 	HASS->saveCfg();
 
 	int v = BRIGHTNESSHELPER->getBrightness();
 	StoragePreferences::putInt("bright", v);
+
+	LOGD("保存");
 	return false;
 }
 
@@ -245,6 +316,17 @@ static bool onButtonClick_btnReboot(ZKButton *pButton) {
 	reboot(RB_AUTOBOOT);
 	return false;
 }
+
+//检测更新
+static bool onButtonClick_btnUpdate(ZKButton *pButton) {
+    LOGD(" ButtonClick btnUpdate !!!\n");
+    //主动检测 /mnt/extsd目录下是否有正确的update.img文件，
+    //如果有，则弹出升级提示框，
+    //如果没有，则无任何动作
+    UpgradeMonitor::getInstance()->checkUpgradeFile("/mnt/extsd");
+    return false;
+}
+
 
 /**************************************************/
 

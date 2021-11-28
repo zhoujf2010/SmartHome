@@ -26,6 +26,8 @@
 
 #include "restclient-cpp/restclient.h"
 #include "storage/StoragePreferences.h"
+#include "utils/TimeHelper.h"
+
 
 
 typedef void (*OnHassDataUpdateFun)(int type);
@@ -53,6 +55,10 @@ public:
 	std::string ipaddr;
 	std::string cfgName;
 	void saveCfg();
+	std::string getWeatherData(std::string weath);
+	std::string getWeatherChsData(std::string weath);
+
+	std::string getTemp(std::string temp);
 
 protected:
 	virtual bool readyToRun();
