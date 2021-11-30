@@ -16,3 +16,4 @@
 *.pyc
 /AIvoice/server/gen
 /AIvoice/server/logs
+/SmartHomeLCD/imgout

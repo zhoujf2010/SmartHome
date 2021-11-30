@@ -115,10 +115,14 @@ class SocketServer():
                             card["state"] = self.hassclient.get_state(entity)
                 # print(json.dumps(data["result"],ensure_ascii=False))
                 data["date"] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) 
+                # n = int(open("a.txt",'r').read())
+                # tmp = "".join(["a" for i in range(n)])
+                # data["tmp"] = tmp
+
 
         #收到hass消息发送至客户端
         dt = json.dumps(data)#{'type': type, 'data': data})
-        _LOGGER.debug("sendto screen[%d]:"%len(self.clientList))
+        _LOGGER.debug("sendto screen[%d]:"%len(self.clientList) + "  len:%d" %len(dt))
         for client in self.clientList.keys():
             try:
                 await self.clientList[client].sock_sendall(client, dt.encode('utf8'))
