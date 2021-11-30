@@ -23,6 +23,7 @@
 #include <string.h>
 #include <system/Thread.h>
 #include "json/json.h"
+#include <cstring>
 
 #include "restclient-cpp/restclient.h"
 #include "storage/StoragePreferences.h"
@@ -59,6 +60,7 @@ public:
 	std::string getWeatherChsData(std::string weath);
 
 	std::string getTemp(std::string temp);
+	std::string getTodayTemp();
 
 protected:
 	virtual bool readyToRun();
@@ -68,7 +70,9 @@ protected:
 
 	bool connected;
 	int pagenum;
-	byte buf[10240];
+	byte buf[1024]; //10240
+	byte allbuf[10240];
+	int bufpos = 0;
 
 	Json::Value pageconfig;
 

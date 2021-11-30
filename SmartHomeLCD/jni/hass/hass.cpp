@@ -52,10 +52,39 @@ bool hass::threadLoop() {
 		connected = true;
 		while (true) { //while
 			//读取，超时1000毫秒
-			int n = conn->Read(buf, sizeof(buf) - 1, 30000);
+			int n = conn->Read(buf, sizeof(buf) - 1, 1);			//1000);
+			if (n == net::E_TIMEOUT) {
+				if (bufpos >0){
+					LOGD("有数据要处理了-------->：%d,%d", bufpos,allbuf[bufpos -1] );
+				}
+
+				if (bufpos > 0 && allbuf[bufpos - 1] == '}') { //有数据，且尾巴是}
+
+
+					LOGD("读到数据-------->：%s", std::string((char*) allbuf, 0, bufpos).substr(0, 1000).c_str());
+					if (bufpos >1000)
+						LOGD("读到数据-------->：%s", std::string((char*) allbuf, 0, bufpos).substr(1000, 2000).c_str());
+					//缓存中的值处理掉
+					allbuf[bufpos] = 0;
+					this->DealMsg(std::string((char*) allbuf, 0, bufpos));
+					bufpos = 0;
+				}
+
+				continue;
+			}
+
+//			LOGD("读到数据-------->：%d,%d", n, sizeof(buf));
 			if (n > 0) {
-				buf[n] = 0;
-				this->DealMsg(std::string((char*) buf, 0, n));
+				if (bufpos >= sizeof(allbuf)) {
+					bufpos = 0; //长度超出，肯定异常了，重新处理
+				}
+
+				std::memcpy(allbuf + bufpos, buf, n);
+				bufpos += n;
+
+//				buf[n] = 0;
+//				this->DealMsg(std::string((char*) buf, 0, n));
+
 			} else if (n == 0) {
 				LOGD("连接正常断开");
 				break;
@@ -122,8 +151,8 @@ void hass::invokeScreen(int type) {
 }
 
 void hass::DealMsg(std::string str) {
-	if (str =="")
-		return ;
+	if (str == "")
+		return;
 
 //	if (str[0] !='{' || str[str.length()-1] != "}"){
 //		LOGD("数据不完整:%s", str.c_str());
@@ -132,7 +161,7 @@ void hass::DealMsg(std::string str) {
 //		return ;
 //	}
 
-//	LOGD("income message:%s", str.c_str());
+//	LOGD("income message:====>%s", str.c_str());
 	//解析json
 	Json::Reader reader;
 	Json::Value root;
@@ -178,7 +207,6 @@ void hass::DealMsg(std::string str) {
 			std::string newstate = event["data"]["new_state"]["state"].asString();
 
 			LOGD("data==>%s,%s", entityid.c_str(), newstate.c_str());
-
 			//遍历记录
 			for (Json::ArrayIndex i = 0; i < pageconfig.size(); ++i) {
 				Json::Value cards = pageconfig[i]["cards"];
@@ -191,6 +219,8 @@ void hass::DealMsg(std::string str) {
 			}
 //			LOGD("生成的json字符串为: %s", pageconfig.toStyledString().c_str());
 			this->invokeScreen(1);
+//			if (entityid =="weather.wo_de_jia")
+//				LOGD("----DEBUG----55--");
 		}
 	} else
 		LOGD("unknown type:%s", type.c_str());
@@ -201,47 +231,60 @@ void hass::saveCfg() {
 	StoragePreferences::putString("cfgName", cfgName);
 }
 
-static std::string* lst = new std::string[15]{"clear-night","cloudy","exceptional","fog",
-	"hail","lightning","lightning-rainy","partlycloudy","pouring",
-	"rainy","snowy","snowy-rainy","sunny","windy","windy-variant"};
+static std::string* lst = new std::string[15] { "clear-night", "cloudy", "exceptional", "fog", "hail", "lightning", "lightning-rainy", "partlycloudy", "pouring", "rainy", "snowy", "snowy-rainy",
+		"sunny", "windy", "windy-variant" };
 
-static std::string* chslst = new std::string[15]{"晴","多云","异常","雾",
-	"冰雹","闪电","闪电雨","局部多云","暴雨",
-	"雨","雪","雨夹雪","睛","风","大风"};
+static std::string* chslst = new std::string[15] { "晴", "多云", "异常", "雾", "冰雹", "闪电", "闪电雨", "局部多云", "暴雨", "雨", "雪", "雨夹雪", "睛", "风", "大风" };
 
-
-int findIndex(std::string weath){
+int findIndex(std::string weath) {
 	int find = 0;
-		for (int i =0;i < 15;i++){
-			if (lst[i] == weath)
-			{
-				find = i;
-				break;
-			}
+	for (int i = 0; i < 15; i++) {
+		if (lst[i] == weath) {
+			find = i;
+			break;
 		}
-		return find;
+	}
+	return find;
 }
 
-std::string hass::getWeatherData(std::string weath){
+//取得天气对应图标
+std::string hass::getWeatherData(std::string weath) {
 	int find = findIndex(weath);
 	char t[1];
 	t[0] = 'a' + find;
-//	char t = 'a' + find;
-
-	return std::string(t,1);
+	return std::string(t, 1);
 }
 
-
-std::string hass::getWeatherChsData(std::string weath){
+//取得天气中文名
+std::string hass::getWeatherChsData(std::string weath) {
 	int find = findIndex(weath);
 	return chslst[find];
 }
 
 //格式化温度
-std::string hass::getTemp(std::string temp){
+std::string hass::getTemp(std::string temp) {
 	double f = atof(temp.c_str());
 
-    char tmpstr[6];
-    sprintf(tmpstr, "%.0f",f);
+	char tmpstr[6];
+	sprintf(tmpstr, "%.0f", f);
 	return std::string(tmpstr);
+}
+
+//取得当天天气
+std::string hass::getTodayTemp() {
+	Json::Value weathercards;
+	for (Json::ArrayIndex j = 0; j < pageconfig.size(); ++j) {
+		Json::Value cards = pageconfig[j]["cards"];
+		//获取标题及状态值
+		for (Json::ArrayIndex i = 0; i < cards.size(); ++i) {
+			if (cards[i]["type"].asString() == "weather-forecast") {
+				weathercards = cards[i]["state"];
+			}
+		}
+	}
+	std::string weathname = weathercards["state"].asString();
+	std::string ret = HASS->getWeatherData(weathname);
+	ret += "," + weathercards["temperature"].asString();
+	ret += "," + HASS->getWeatherChsData(weathname);
+	return ret;
 }

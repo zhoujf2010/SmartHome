@@ -1,5 +1,6 @@
 #pragma once
 #include "uart/ProtocolSender.h"
+#include "hass/hass.h"
 /*
 *此文件由GUI工具生成
 *文件功能：用于处理用户的逻辑相应代码
@@ -39,6 +40,16 @@ static void updateUI_time() {
     static const char *day[] = { "日", "一", "二", "三", "四", "五", "六" };
     sprintf(timeStr, "%d年%02d月%02d日  星期%s", 1900 + t->tm_year, t->tm_mon + 1, t->tm_mday,day[t->tm_wday]);
     mTextviewDatePtr->setText(timeStr); // 注意修改控件名称
+
+    string weath = HASS->getTodayTemp();
+    int p1 = weath.find(",",0);
+    int p2 = weath.find(",",p1+1);
+    string w1 = weath.substr(0, p1);
+    string w2 = weath.substr(p1+1, p2-2);
+    string w3 = weath.substr(p2+1, weath.length());
+
+    mtxtWethNowPtr->setText(w1);
+    mTextView1Ptr->setText(w3 + " " + w2 + "°C");
 }
 
 /**

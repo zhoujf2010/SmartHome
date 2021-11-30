@@ -206,6 +206,7 @@ static void onListItemClick_Listview2(ZKListView *pListView, int index, int id) 
 
 /******************* 第2页(空调,POS:480)*******************************/
 
+/******************* 第3页(窗帘,POS:960)*******************************/
 
 /******************* 第4页(天气,POS:-2880)*******************************/
 Json::Value weathercards;
@@ -258,7 +259,7 @@ static void obtainListItemData_lstHistory(ZKListView *pListView,ZKListView::ZKLi
     struct tm *t = TimeHelper::getDateTime();
     char timeStr[6];
     static const char *day[] = { "日", "一", "二", "三", "四", "五", "六" };
-    LOGD("周%d",(t->tm_wday+index+1)%7);
+//    LOGD("周%d",(t->tm_wday+index+1)%7);
     sprintf(timeStr, "周%s",day[(t->tm_wday+index+1)%7]);
 	ZKListView::ZKListSubItem* subitem4 = pListItem->findSubItemByID(ID_MAIN_SubItem5);
 	subitem4->setText(string(timeStr,6));
