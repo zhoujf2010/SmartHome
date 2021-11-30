@@ -54,16 +54,14 @@ bool hass::threadLoop() {
 			//读取，超时1000毫秒
 			int n = conn->Read(buf, sizeof(buf) - 1, 1);			//1000);
 			if (n == net::E_TIMEOUT) {
-				if (bufpos >0){
-					LOGD("有数据要处理了-------->：%d,%d", bufpos,allbuf[bufpos -1] );
-				}
+//				if (bufpos >0){
+//					LOGD("有数据要处理了-------->：%d,%d", bufpos,allbuf[bufpos -1] );
+//				}
 
 				if (bufpos > 0 && allbuf[bufpos - 1] == '}') { //有数据，且尾巴是}
-
-
-					LOGD("读到数据-------->：%s", std::string((char*) allbuf, 0, bufpos).substr(0, 1000).c_str());
-					if (bufpos >1000)
-						LOGD("读到数据-------->：%s", std::string((char*) allbuf, 0, bufpos).substr(1000, 2000).c_str());
+//					LOGD("读到数据-------->：%s", std::string((char*) allbuf, 0, bufpos).substr(0, 1000).c_str());
+//					if (bufpos >1000)
+//						LOGD("读到数据-------->：%s", std::string((char*) allbuf, 0, bufpos).substr(1000, 2000).c_str());
 					//缓存中的值处理掉
 					allbuf[bufpos] = 0;
 					this->DealMsg(std::string((char*) allbuf, 0, bufpos));
